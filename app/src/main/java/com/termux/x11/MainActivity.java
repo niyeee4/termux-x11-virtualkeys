@@ -667,6 +667,9 @@ public class MainActivity extends AppCompatActivity {
                             @Override public void onPointerMove(int dx, int dy) {
                                 stub.sendMouseEvent(dx, dy, InputStub.BUTTON_UNDEFINED, false, true);
                             }
+                            @Override public void onScroll(float distanceX, float distanceY) {
+                                stub.sendMouseWheelEvent(distanceX, distanceY);
+                            }
                         };
                     }
                 }

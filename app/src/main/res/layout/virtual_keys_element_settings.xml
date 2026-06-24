@@ -102,29 +102,13 @@
             android:textSize="14sp"
             android:textColor="@android:color/black" />
 
-        <LinearLayout
+        <EditText
+            android:id="@+id/ETScale"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <SeekBar
-                android:id="@+id/SBScale"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="200"
-                android:progress="100" />
-
-            <TextView
-                android:id="@+id/TVScale"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="100%"
-                android:textSize="14sp"
-                android:textColor="@android:color/black" />
-
-        </LinearLayout>
+            android:inputType="number"
+            android:hint="100"
+            android:maxLines="1" />
 
         <CheckBox
             android:id="@+id/CBToggleSwitch"
@@ -135,7 +119,7 @@
             android:visibility="gone" />
 
         <LinearLayout
-            android:id="@+id/LLCustomTextIcon"
+            android:id="@+id/LLCustomText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -155,26 +139,6 @@
                 android:layout_height="wrap_content"
                 android:hint="Button label"
                 android:inputType="text" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Icon"
-                android:textSize="14sp"
-                android:textColor="@android:color/black" />
-
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:id="@+id/LLIconList"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
-
-            </HorizontalScrollView>
 
         </LinearLayout>
 

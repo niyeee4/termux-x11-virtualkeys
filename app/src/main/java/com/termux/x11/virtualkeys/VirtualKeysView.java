@@ -1,7 +1,10 @@
 package com.termux.x11.virtualkeys;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
+
+import androidx.preference.PreferenceManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -9,10 +12,13 @@ import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Path;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -46,6 +52,25 @@ public class VirtualKeysView extends View {
 
     private static final float CURSOR_ACCELERATION = 2f;
     private static final float CURSOR_ACCELERATION_THRESHOLD = 4f;
+    private static final float TAP_DISTANCE_THRESHOLD = 25f;
+    private static final long TAP_TIME_THRESHOLD_MS = 350;
+
+    private SparseArray<PointF> touchDownPos = new SparseArray<>();
+    private SparseArray<Long> touchDownTime = new SparseArray<>();
+    private SparseArray<Boolean> pointerOnElement = new SparseArray<>();
+    private int freePointerCount = 0;
+    private boolean twoFingerScrollActive = false;
+    private float twoFingerLastCenterX;
+    private float twoFingerLastCenterY;
+    private int tapCount = 0;
+    private float scrollAccumulatorX = 0f;
+    private float scrollAccumulatorY = 0f;
+    private static final float SCROLL_THRESHOLD = 20f;
+    private boolean leftButtonHeld = false;
+    private boolean rightButtonHeld = false;
+    private Runnable holdDetector = null;
+    private static final long HOLD_DELAY_MS = 450;
+    private static final float HOLD_MOVEMENT_THRESHOLD = 15f;
 
     public VirtualKeysView(Context context) {
         super(context);
@@ -381,6 +406,8 @@ public class VirtualKeysView extends View {
             int actionIndex = event.getActionIndex();
             int pointerId = event.getPointerId(actionIndex);
             int actionMasked = event.getActionMasked();
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+            boolean vkInputMode = prefs.getBoolean("touchGestures", false);
 
             switch (actionMasked) {
                 case MotionEvent.ACTION_DOWN:
@@ -401,44 +428,142 @@ public class VirtualKeysView extends View {
                             break;
                         }
                     }
-                    if (!handledByElement && mousePointerId == -1) {
-                        mousePointerId = pointerId;
-                        mouseLastX = x;
-                        mouseLastY = y;
+                    pointerOnElement.put(pointerId, handledByElement);
+                    if (!handledByElement) {
+                        touchDownPos.put(pointerId, new PointF(x, y));
+                        touchDownTime.put(pointerId, SystemClock.uptimeMillis());
+                        freePointerCount++;
+                        if (mousePointerId == -1) {
+                            mousePointerId = pointerId;
+                            mouseLastX = x;
+                            mouseLastY = y;
+                        }
+                        if (freePointerCount == 1) {
+                            scheduleHoldDetector();
+                        }
+                        if (freePointerCount == 2) {
+                            twoFingerLastCenterX = computeFreeCenterX(event);
+                            twoFingerLastCenterY = computeFreeCenterY(event);
+                            twoFingerScrollActive = false;
+                            scheduleHoldDetector();
+                        }
                     }
                     break;
                 }
                 case MotionEvent.ACTION_MOVE: {
+                    // Process element touch moves (handleTouchMove returns false for BUTTON,
+                    // so we cannot rely on its return value to update pointerOnElement)
                     for (int i = 0; i < event.getPointerCount(); i++) {
                         float x = event.getX(i);
                         float y = event.getY(i);
                         int id = event.getPointerId(i);
-                        boolean handledByElement = false;
                         for (VirtualKeysElement element : profile.getElements()) {
-                            if (element.handleTouchMove(id, x, y)) {
-                                handledByElement = true;
-                                break;
+                            element.handleTouchMove(id, x, y);
+                        }
+                    }
+                    // Compute free count from pointerOnElement (set at DOWN, cleared at UP)
+                    // Do NOT re-evaluate from handleTouchMove — BUTTON elements return false even when captured
+                    freePointerCount = 0;
+                    for (int i = 0; i < event.getPointerCount(); i++) {
+                        int id = event.getPointerId(i);
+                        Boolean onEl = pointerOnElement.get(id, null);
+                        if (onEl != null && !onEl) {
+                            freePointerCount++;
+                        }
+                    }
+                    // Update centers when transitioning to 2 free pointers
+                    if (freePointerCount == 2 && !twoFingerScrollActive) {
+                        twoFingerLastCenterX = computeFreeCenterX(event);
+                        twoFingerLastCenterY = computeFreeCenterY(event);
+                        scrollAccumulatorX = 0f;
+                        scrollAccumulatorY = 0f;
+                    }
+                    if (freePointerCount >= 2 && !vkInputMode && !rightButtonHeld && !leftButtonHeld) {
+                        // Cancel hold if any free finger moved beyond threshold (user is moving, not holding)
+                        for (int pi = 0; pi < event.getPointerCount(); pi++) {
+                            int pid = event.getPointerId(pi);
+                            Boolean onEl = pointerOnElement.get(pid, null);
+                            if (onEl != null && !onEl) {
+                                PointF dp = touchDownPos.get(pid);
+                                if (dp != null) {
+                                    float fd = (float) Math.sqrt(
+                                        Math.pow(event.getX(pi) - dp.x, 2) + Math.pow(event.getY(pi) - dp.y, 2));
+                                    if (fd >= HOLD_MOVEMENT_THRESHOLD) {
+                                        cancelHoldDetector();
+                                        break;
+                                    }
+                                }
                             }
                         }
-                        if (!handledByElement && id == mousePointerId) {
-                            float dx = x - mouseLastX;
-                            float dy = y - mouseLastY;
-                            if (dx != 0f || dy != 0f) {
-                                int sendDx;
-                                int sendDy;
-                                if (Math.abs(dx) > CURSOR_ACCELERATION_THRESHOLD || Math.abs(dy) > CURSOR_ACCELERATION_THRESHOLD) {
-                                    sendDx = (int) (dx * CURSOR_ACCELERATION);
-                                    sendDy = (int) (dy * CURSOR_ACCELERATION);
-                                } else {
-                                    sendDx = (int) dx;
-                                    sendDy = (int) dy;
+                        float centerX = computeFreeCenterX(event);
+                        float centerY = computeFreeCenterY(event);
+                        float dx = centerX - twoFingerLastCenterX;
+                        float dy = centerY - twoFingerLastCenterY;
+                        twoFingerLastCenterX = centerX;
+                        twoFingerLastCenterY = centerY;
+                        if (freePointerCount > 2) {
+                            twoFingerLastCenterX = centerX;
+                            twoFingerLastCenterY = centerY;
+                            scrollAccumulatorX = 0f;
+                            scrollAccumulatorY = 0f;
+                            cancelHoldDetector();
+                            break;
+                        }
+                        scrollAccumulatorX += dx;
+                        scrollAccumulatorY += dy;
+                        if (Math.abs(scrollAccumulatorY) >= SCROLL_THRESHOLD && inputSender != null) {
+                            float dist = scrollAccumulatorY;
+                            scrollAccumulatorY = 0f;
+                            twoFingerScrollActive = true;
+                            cancelHoldDetector();
+                            inputSender.onScroll(0f, dist);
+                        }
+                        if (Math.abs(scrollAccumulatorX) >= SCROLL_THRESHOLD && inputSender != null) {
+                            float dist = scrollAccumulatorX;
+                            scrollAccumulatorX = 0f;
+                            twoFingerScrollActive = true;
+                            cancelHoldDetector();
+                            inputSender.onScroll(dist, 0f);
+                        }
+                    } else if (freePointerCount == 1) {
+                        for (int i = 0; i < event.getPointerCount(); i++) {
+                            int id = event.getPointerId(i);
+                            Boolean onEl = pointerOnElement.get(id, null);
+                            if (onEl != null && !onEl && id == mousePointerId) {
+                                float x = event.getX(i);
+                                float y = event.getY(i);
+                                float dx = x - mouseLastX;
+                                float dy = y - mouseLastY;
+                                if (dx != 0f || dy != 0f) {
+                                    // Cancel hold if finger moved beyond threshold (user is moving cursor, not holding)
+                                    if (!leftButtonHeld) {
+                                        PointF downPos = touchDownPos.get(id);
+                                        if (downPos != null) {
+                                            float totalDist = (float) Math.sqrt(
+                                                Math.pow(x - downPos.x, 2) + Math.pow(y - downPos.y, 2));
+                                            if (totalDist >= HOLD_MOVEMENT_THRESHOLD) {
+                                                cancelHoldDetector();
+                                            }
+                                        }
+                                    }
+                                    boolean relativeMouse = prefs.getBoolean("relativeMouse", false);
+                                    int sendDx;
+                                    int sendDy;
+                                    if (relativeMouse && (Math.abs(dx) > CURSOR_ACCELERATION_THRESHOLD || Math.abs(dy) > CURSOR_ACCELERATION_THRESHOLD)) {
+                                        sendDx = (int) (dx * CURSOR_ACCELERATION);
+                                        sendDy = (int) (dy * CURSOR_ACCELERATION);
+                                    } else {
+                                        sendDx = (int) dx;
+                                        sendDy = (int) dy;
+                                    }
+                                    if ((sendDx != 0 || sendDy != 0) && inputSender != null) {
+                                        inputSender.onPointerMove(sendDx, sendDy);
+                                    }
                                 }
-                                if ((sendDx != 0 || sendDy != 0) && inputSender != null) {
-                                    inputSender.onPointerMove(sendDx, sendDy);
-                                }
+                                mouseLastX = x;
+                                mouseLastY = y;
+                                break;
                             }
-                            mouseLastX = x;
-                            mouseLastY = y;
                         }
                     }
                     break;
@@ -446,14 +571,71 @@ public class VirtualKeysView extends View {
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_POINTER_UP:
                 case MotionEvent.ACTION_CANCEL: {
+                    cancelHoldDetector();
                     for (VirtualKeysElement element : profile.getElements()) {
                         element.handleTouchUp(pointerId);
                     }
                     if (pointerId == mousePointerId) {
                         mousePointerId = -1;
                     }
-                    if (actionMasked == MotionEvent.ACTION_UP || actionMasked == MotionEvent.ACTION_CANCEL) {
+                    Boolean wasOnElement = pointerOnElement.get(pointerId, false);
+                    if (!wasOnElement) {
+                        freePointerCount = Math.max(0, freePointerCount - 1);
+                        if (!vkInputMode && !twoFingerScrollActive && !rightButtonHeld && !leftButtonHeld) {
+                            PointF downPos = touchDownPos.get(pointerId);
+                            Long downTime = touchDownTime.get(pointerId);
+                            if (downPos != null && downTime != null) {
+                                int idx = event.findPointerIndex(pointerId);
+                                if (idx >= 0) {
+                                    float upX = event.getX(idx);
+                                    float upY = event.getY(idx);
+                                    float dist = (float) Math.sqrt(
+                                        Math.pow(upX - downPos.x, 2) + Math.pow(upY - downPos.y, 2));
+                                    long dur = SystemClock.uptimeMillis() - downTime;
+                                    if (dist < TAP_DISTANCE_THRESHOLD && dur < TAP_TIME_THRESHOLD_MS) {
+                                        tapCount++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    pointerOnElement.remove(pointerId);
+                    touchDownPos.remove(pointerId);
+                    touchDownTime.remove(pointerId);
+                    boolean allPointersReleased = actionMasked == MotionEvent.ACTION_UP || actionMasked == MotionEvent.ACTION_CANCEL || (freePointerCount == 0 && pointerOnElement.size() == 0);
+                    if (allPointersReleased) {
+                        if (leftButtonHeld) {
+                            if (inputSender != null) {
+                                inputSender.onPointerButton(1, false);
+                            }
+                            leftButtonHeld = false;
+                        }
+                        if (rightButtonHeld) {
+                            if (inputSender != null) {
+                                inputSender.onPointerButton(3, false);
+                            }
+                            rightButtonHeld = false;
+                        }
+                        if (!leftButtonHeld && !rightButtonHeld && !vkInputMode && !twoFingerScrollActive && inputSender != null) {
+                            if (tapCount == 1) {
+                                inputSender.onPointerButton(1, true);
+                                inputSender.onPointerButton(1, false);
+                            } else if (tapCount >= 2) {
+                                inputSender.onPointerButton(3, true);
+                                inputSender.onPointerButton(3, false);
+                            }
+                        }
                         mousePointerId = -1;
+                        freePointerCount = 0;
+                        twoFingerScrollActive = false;
+                        leftButtonHeld = false;
+                        rightButtonHeld = false;
+                        scrollAccumulatorX = 0f;
+                        scrollAccumulatorY = 0f;
+                        tapCount = 0;
+                        touchDownPos.clear();
+                        touchDownTime.clear();
+                        pointerOnElement.clear();
                     }
                     break;
                 }
@@ -461,5 +643,58 @@ public class VirtualKeysView extends View {
             return true;
         }
         return false;
+    }
+
+    private void scheduleHoldDetector() {
+        cancelHoldDetector();
+        holdDetector = () -> {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+            boolean touchGesturesOn = prefs.getBoolean("touchGestures", false);
+            if (!touchGesturesOn && inputSender != null) {
+                if (freePointerCount >= 2 && !twoFingerScrollActive && !rightButtonHeld && !leftButtonHeld) {
+                    rightButtonHeld = true;
+                    inputSender.onPointerButton(3, true);
+                } else if (freePointerCount == 1 && !leftButtonHeld) {
+                    leftButtonHeld = true;
+                    inputSender.onPointerButton(1, true);
+                }
+            }
+        };
+        postDelayed(holdDetector, HOLD_DELAY_MS);
+    }
+
+    private void cancelHoldDetector() {
+        if (holdDetector != null) {
+            removeCallbacks(holdDetector);
+            holdDetector = null;
+        }
+    }
+
+    private float computeFreeCenterX(MotionEvent event) {
+        float sum = 0;
+        int count = 0;
+        for (int i = 0; i < event.getPointerCount(); i++) {
+            int id = event.getPointerId(i);
+            Boolean onEl = pointerOnElement.get(id, null);
+            if (onEl != null && !onEl) {
+                sum += event.getX(i);
+                count++;
+            }
+        }
+        return count > 0 ? sum / count : event.getX();
+    }
+
+    private float computeFreeCenterY(MotionEvent event) {
+        float sum = 0;
+        int count = 0;
+        for (int i = 0; i < event.getPointerCount(); i++) {
+            int id = event.getPointerId(i);
+            Boolean onEl = pointerOnElement.get(id, null);
+            if (onEl != null && !onEl) {
+                sum += event.getY(i);
+                count++;
+            }
+        }
+        return count > 0 ? sum / count : event.getY();
     }
 }

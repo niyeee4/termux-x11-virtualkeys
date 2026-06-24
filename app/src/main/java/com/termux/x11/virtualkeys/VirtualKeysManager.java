@@ -3,14 +3,20 @@ package com.termux.x11.virtualkeys;
 import android.content.Context;
 import android.net.Uri;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class VirtualKeysManager {
     private Context context;
@@ -99,15 +105,37 @@ public class VirtualKeysManager {
     public VirtualKeysProfile importProfile(Uri uri) throws Exception {
         InputStream is = context.getContentResolver().openInputStream(uri);
         if (is == null) throw new IOException("Cannot open input stream");
-        String name = "imported_" + System.currentTimeMillis();
-        VirtualKeysProfile profile = VirtualKeysProfile.loadFromUri(context, name, is);
-        is.close();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
+        }
+        reader.close();
+        String jsonString = sb.toString();
+        JSONObject json = new JSONObject(jsonString);
+        String jsonName = json.optString("name", null);
+        if (jsonName == null || jsonName.isEmpty()) {
+            throw new IOException("Invalid profile: missing name");
+        }
+        // Avoid name conflicts — both filename AND display name
+        File dir = new File(context.getFilesDir(), "virtualkeys");
+        dir.mkdirs();
+        String finalName = jsonName;
+        File f = new File(dir, finalName + ".icp");
+        int counter = 1;
+        while (f.exists()) {
+            finalName = jsonName + "_" + counter;
+            f = new File(dir, finalName + ".icp");
+            counter++;
+        }
+        VirtualKeysProfile profile = VirtualKeysProfile.loadFromUri(context, finalName, new ByteArrayInputStream(jsonString.getBytes(StandardCharsets.UTF_8)));
         if (!profile.validate()) {
             throw new IOException("Invalid profile: no valid elements found");
         }
-        File targetFile = new File(context.getFilesDir(), "virtualkeys/" + name + ".icp");
-        targetFile.getParentFile().mkdirs();
-        FileOutputStream fos = new FileOutputStream(targetFile);
+        // Ensure profile display name matches the filename (handles conflict suffix)
+        profile.setName(finalName);
+        FileOutputStream fos = new FileOutputStream(f);
         fos.write(profile.toJSONObject().toString(2).getBytes(StandardCharsets.UTF_8));
         fos.close();
         profiles.add(profile);

@@ -36,6 +36,7 @@
         <SeekBarPreference app:key="capturedPointerSpeedFactor" app:defaultValue="100" app:min="1" android:max="300" app:seekBarIncrement="1" app:showSeekBarValue="true" app:updatesContinuously="true" />
         <SwitchPreferenceCompat app:key="tapToMove" app:defaultValue="false" />
         <SwitchPreferenceCompat app:key="ignoreGamepadEvents" app:defaultValue="false" />
+        <SwitchPreferenceCompat app:key="relativeMouse" app:defaultValue="false" app:title="Relative Mouse" />
     </PreferenceScreen>
     <PreferenceScreen app:key="kbd">
         <SwitchPreferenceCompat app:key="showAdditionalKbd" app:defaultValue="false" />
@@ -53,6 +54,7 @@
         <SwitchPreferenceCompat app:key="filterOutWinkey" app:defaultValue="false" />
         <SwitchPreferenceCompat app:key="enforceCharBasedInput" app:defaultValue="false" />
         <SwitchPreferenceCompat app:key="vk_enabled" app:defaultValue="false" />
+        <SwitchPreferenceCompat app:key="touchGestures" app:defaultValue="false" app:title="Touch Gestures" app:summaryOn="Default touch gestures disabled. Only pointer movement + Virtual Keys." app:summaryOff="Tap, hold, drag, and right click work normally." />
         <SeekBarPreference app:key="vk_opacity" app:defaultValue="40" app:min="5" android:max="100" app:seekBarIncrement="5" app:showSeekBarValue="true" app:updatesContinuously="true" />
         <Preference app:key="vk_open_editor" />
         <Preference app:key="vk_manage_profiles" />

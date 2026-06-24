@@ -95,6 +95,7 @@ public class VirtualKeysElement {
     private Long touchTime = null;
     private RangeScroller scroller = null;
     private CubicBezierInterpolator interpolator = null;
+    private boolean toggleActive = false;
 
     public VirtualKeysElement(VirtualKeysView view) {
         this.view = view;
@@ -235,6 +236,7 @@ public class VirtualKeysElement {
         iconId = 0;
         range = null;
         scroller = null;
+        toggleActive = false;
         boundingBoxNeedsUpdate = true;
     }
 
@@ -355,7 +357,7 @@ public class VirtualKeysElement {
         Paint paint = view.getPaint();
         int primaryColor = view.getPrimaryColor();
 
-        paint.setColor(isSelected ? view.getSecondaryColor() : primaryColor);
+        paint.setColor((isSelected || toggleActive) ? view.getSecondaryColor() : primaryColor);
         paint.setStyle(Paint.Style.STROKE);
         float strokeWidth = snappingSize * 0.25f;
         paint.setStrokeWidth(strokeWidth);
@@ -400,6 +402,38 @@ public class VirtualKeysElement {
                 radius = snappingSize * 0.75f * scale;
                 canvas.drawRoundRect(box.left, box.top, box.right, box.bottom, radius, radius, paint);
                 break;
+        }
+
+        if (isToggleSwitch && toggleActive) {
+            int savedColor = paint.getColor();
+            int savedAlpha = paint.getAlpha();
+            Paint.Style savedStyle = paint.getStyle();
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0xFFFFFFFF);
+            paint.setAlpha(50);
+
+            switch (shape) {
+                case CIRCLE:
+                    canvas.drawCircle(cx, cy, box.width() * 0.5f, paint);
+                    break;
+                case RECT:
+                    canvas.drawRect(box, paint);
+                    break;
+                case ROUND_RECT:
+                    canvas.drawRoundRect(box.left, box.top, box.right, box.bottom,
+                        box.height() * 0.5f, box.height() * 0.5f, paint);
+                    break;
+                case SQUARE:
+                    canvas.drawRoundRect(box.left, box.top, box.right, box.bottom,
+                        view.getSnappingSize() * 0.75f * scale,
+                        view.getSnappingSize() * 0.75f * scale, paint);
+                    break;
+            }
+
+            paint.setColor(savedColor);
+            paint.setAlpha(savedAlpha);
+            paint.setStyle(savedStyle);
         }
 
         if (iconId > 0) {
@@ -678,13 +712,21 @@ public class VirtualKeysElement {
 
             switch (type) {
                 case BUTTON:
+                    if (isToggleSwitch) {
+                        if (!toggleActive) {
+                            sendAllBindings(true);
+                            toggleActive = true;
+                        } else {
+                            sendAllBindings(false);
+                            toggleActive = false;
+                        }
+                        view.invalidate();
+                        return true;
+                    }
                     if (isKeepButtonPressedAfterMinTime()) {
                         touchTime = System.currentTimeMillis();
                     }
-                    if (!isToggleSwitch || !isSelected) {
-                        view.handleInputEvent(getBindingAt(0), true);
-                        view.handleInputEvent(getBindingAt(1), true);
-                    }
+                    sendAllBindings(true);
                     return true;
                 case RANGE_BUTTON:
                     if (scroller == null) {
@@ -852,22 +894,18 @@ public class VirtualKeysElement {
         if (pointerId == currentPointerId) {
             switch (type) {
                 case BUTTON:
+                    if (isToggleSwitch) {
+                        break;
+                    }
                     if (isKeepButtonPressedAfterMinTime() && touchTime != null) {
                         isSelected = (System.currentTimeMillis() - touchTime) > BUTTON_MIN_TIME_TO_KEEP_PRESSED;
                         if (!isSelected) {
-                            view.handleInputEvent(getBindingAt(0), false);
-                            view.handleInputEvent(getBindingAt(1), false);
+                            sendAllBindings(false);
                         }
                         touchTime = null;
                         view.invalidate();
-                    } else if (!isToggleSwitch || isSelected) {
-                        view.handleInputEvent(getBindingAt(0), false);
-                        view.handleInputEvent(getBindingAt(1), false);
-                    }
-
-                    if (isToggleSwitch) {
-                        isSelected = !isSelected;
-                        view.invalidate();
+                    } else {
+                        sendAllBindings(false);
                     }
                     break;
                 case RANGE_BUTTON:
@@ -904,9 +942,13 @@ public class VirtualKeysElement {
             scroller = null;
         }
         if (type == Type.BUTTON) {
-            if (!isToggleSwitch || isSelected) {
-                view.handleInputEvent(getBindingAt(0), false);
-                view.handleInputEvent(getBindingAt(1), false);
+            if (isToggleSwitch) {
+                if (toggleActive) {
+                    sendAllBindings(false);
+                    toggleActive = false;
+                }
+            } else {
+                sendAllBindings(false);
             }
         } else {
             for (int i = 0; i < states.length; i++) {
@@ -917,11 +959,21 @@ public class VirtualKeysElement {
             }
         }
         isSelected = false;
+        if (view != null) view.invalidate();
+    }
+
+    private void sendAllBindings(boolean isDown) {
+        for (int i = 0; i < bindings.length; i++) {
+            VirtualKeysBinding b = bindings[i];
+            if (b != null && b != VirtualKeysBinding.NONE) {
+                view.handleInputEvent(b, isDown);
+            }
+        }
     }
 
     private boolean isKeepButtonPressedAfterMinTime() {
         VirtualKeysBinding binding = getBindingAt(0);
-        return !isToggleSwitch && (binding == VirtualKeysBinding.GAMEPAD_BUTTON_THUMBL || binding == VirtualKeysBinding.GAMEPAD_BUTTON_THUMBR);
+        return binding == VirtualKeysBinding.GAMEPAD_BUTTON_THUMBL || binding == VirtualKeysBinding.GAMEPAD_BUTTON_THUMBR;
     }
 
     private float clamp(float value, float min, float max) {

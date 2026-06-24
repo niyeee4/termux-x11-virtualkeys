@@ -1,9 +1,9 @@
 package com.termux.x11.virtualkeys;
 
 import android.content.res.Configuration;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,19 +14,14 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RadioGroup;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 public class VirtualKeysEditorActivity extends AppCompatActivity implements View.OnClickListener {
     private VirtualKeysView inputControlsView;
@@ -122,6 +117,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
     private void showControlElementSettings(View anchorView, VirtualKeysElement element) {
         View view = LayoutInflater.from(this).inflate(com.termux.x11.R.layout.virtual_keys_element_settings, null);
 
+        Runnable[] updateLayoutRef = new Runnable[1];
         Runnable updateLayout = new Runnable() {
             @Override
             public void run() {
@@ -130,13 +126,14 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                     type == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
                 view.findViewById(com.termux.x11.R.id.CBToggleSwitch).setVisibility(
                     type == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
-                view.findViewById(com.termux.x11.R.id.LLCustomTextIcon).setVisibility(
+                view.findViewById(com.termux.x11.R.id.LLCustomText).setVisibility(
                     type == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
                 view.findViewById(com.termux.x11.R.id.LLRangeOptions).setVisibility(
                     type == VirtualKeysElement.Type.RANGE_BUTTON ? View.VISIBLE : View.GONE);
-                loadBindingSpinners(element, view.findViewById(com.termux.x11.R.id.LLBindings));
+                loadBindingSpinners(element, view.findViewById(com.termux.x11.R.id.LLBindings), updateLayoutRef[0]);
             }
         };
+        updateLayoutRef[0] = updateLayout;
 
         loadTypeSpinner(element, view.findViewById(com.termux.x11.R.id.SType), updateLayout);
 
@@ -159,24 +156,27 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             }
         });
 
-        TextView tvScale = view.findViewById(com.termux.x11.R.id.TVScale);
-        SeekBar sbScale = view.findViewById(com.termux.x11.R.id.SBScale);
-        sbScale.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        EditText etScale = view.findViewById(com.termux.x11.R.id.ETScale);
+        etScale.setText(String.valueOf((int) (element.getScale() * 100)));
+        etScale.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                tvScale.setText(progress + "%");
-                if (fromUser) {
-                    element.setScale(progress / 100.0f);
-                    if (profile != null) profile.save();
-                    inputControlsView.invalidate();
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                int value;
+                try {
+                    value = Integer.parseInt(s.toString());
+                } catch (NumberFormatException e) {
+                    return;
                 }
+                value = Math.max(0, Math.min(300, value));
+                element.setScale(value / 100.0f);
+                if (profile != null) profile.save();
+                inputControlsView.invalidate();
             }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
         });
-        sbScale.setProgress((int) (element.getScale() * 100));
 
         CheckBox cbToggleSwitch = view.findViewById(com.termux.x11.R.id.CBToggleSwitch);
         cbToggleSwitch.setChecked(element.isToggleSwitch());
@@ -193,10 +193,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
         etCustomText.setText(element.getText());
         etCustomText.setVisibility(element.getType() == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
 
-        LinearLayout llIconList = view.findViewById(com.termux.x11.R.id.LLIconList);
-        llIconList.setVisibility(element.getType() == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
-        loadIcons(llIconList, element.getIconId());
-
         updateLayout.run();
 
         PopupWindow popupWindow = showPopupWindow(anchorView, view, dpToPx(340), 0);
@@ -204,21 +200,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             @Override
             public void onDismiss() {
                 String text = etCustomText.getText().toString().trim();
-                byte iconId = 0;
-                for (int i = 0; i < llIconList.getChildCount(); i++) {
-                    View child = llIconList.getChildAt(i);
-                    if (child.isSelected()) {
-                        Object tag = child.getTag();
-                        if (tag instanceof Byte) {
-                            iconId = (Byte) tag;
-                        } else if (tag instanceof Integer) {
-                            iconId = ((Integer) tag).byteValue();
-                        }
-                        break;
-                    }
-                }
                 element.setText(text);
-                element.setIconId(iconId);
                 if (profile != null) profile.save();
                 inputControlsView.invalidate();
             }
@@ -320,12 +302,68 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
         });
     }
 
-    private void loadBindingSpinners(VirtualKeysElement element, LinearLayout container) {
+    private void loadBindingSpinners(VirtualKeysElement element, LinearLayout container, Runnable onChanged) {
         container.removeAllViews();
         switch (element.getType()) {
-            case BUTTON:
-                loadBindingSpinner(element, container, 0, "Binding");
+            case BUTTON: {
+                int slotsToShow = 1;
+                for (int i = 1; i < 4; i++) {
+                    if (element.getBindingAt(i) != VirtualKeysBinding.NONE) {
+                        slotsToShow = i + 1;
+                    }
+                }
+                for (int i = 0; i < slotsToShow; i++) {
+                    float density = getResources().getDisplayMetrics().density;
+                    LinearLayout row = new LinearLayout(this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setPadding(0, (int) (4 * density), 0, (int) (4 * density));
+                    LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    container.addView(row, rowParams);
+
+                    LinearLayout spinnerColumn = new LinearLayout(this);
+                    spinnerColumn.setOrientation(LinearLayout.VERTICAL);
+                    spinnerColumn.setLayoutParams(new LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                    row.addView(spinnerColumn);
+
+                    String title = "Key " + (i + 1);
+                    loadBindingSpinnerInline(element, spinnerColumn, i, title);
+
+                    if (i > 0) {
+                        android.widget.Button removeBtn = new android.widget.Button(this);
+                        removeBtn.setText("X");
+                        removeBtn.setTextSize(10);
+                        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
+                            (int) (36 * density), (int) (36 * density));
+                        btnParams.gravity = android.view.Gravity.CENTER_VERTICAL;
+                        btnParams.setMargins((int) (4 * density), 0, 0, 0);
+                        removeBtn.setLayoutParams(btnParams);
+                        final int idx = i;
+                        removeBtn.setOnClickListener(v -> {
+                            element.setBindingAt(idx, VirtualKeysBinding.NONE);
+                            if (profile != null) profile.save();
+                            onChanged.run();
+                        });
+                        row.addView(removeBtn);
+                    }
+                }
+                final int nextSlot = slotsToShow;
+                if (nextSlot < 4) {
+                    android.widget.Button addBtn = new android.widget.Button(this);
+                    addBtn.setText("+ Add Key");
+                    addBtn.setTextSize(12);
+                    addBtn.setLayoutParams(new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    addBtn.setOnClickListener(v -> {
+                        element.setBindingAt(nextSlot, VirtualKeysBinding.KEY_A);
+                        if (profile != null) profile.save();
+                        onChanged.run();
+                    });
+                    container.addView(addBtn);
+                }
                 break;
+            }
             case D_PAD:
             case STICK:
             case TRACKPAD:
@@ -335,6 +373,99 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                 loadBindingSpinner(element, container, 3, "Left");
                 break;
         }
+    }
+
+    private void loadBindingSpinnerInline(VirtualKeysElement element, LinearLayout container, int index, String title) {
+        float density = getResources().getDisplayMetrics().density;
+
+        TextView tvTitle = new TextView(this);
+        tvTitle.setText(title);
+        tvTitle.setTextSize(12);
+        container.addView(tvTitle, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Spinner sBindingType = new Spinner(this);
+        String[] typeEntries = {"Keyboard", "Mouse", "Gamepad"};
+        sBindingType.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, typeEntries));
+        container.addView(sBindingType, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Spinner sBinding = new Spinner(this);
+        container.addView(sBinding, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Runnable update = () -> {
+            String[] bindingEntries;
+            switch (sBindingType.getSelectedItemPosition()) {
+                case 0:
+                    bindingEntries = VirtualKeysBinding.keyboardBindingLabels();
+                    break;
+                case 1:
+                    bindingEntries = VirtualKeysBinding.mouseBindingLabels();
+                    break;
+                case 2:
+                    bindingEntries = VirtualKeysBinding.gamepadBindingLabels();
+                    break;
+                default:
+                    bindingEntries = VirtualKeysBinding.keyboardBindingLabels();
+                    break;
+            }
+            sBinding.setAdapter(new ArrayAdapter<>(VirtualKeysEditorActivity.this,
+                android.R.layout.simple_spinner_dropdown_item, bindingEntries));
+            setSpinnerSelectionFromValue(sBinding, element.getBindingAt(index).toString());
+        };
+
+        sBindingType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                update.run();
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        VirtualKeysBinding selectedBinding = element.getBindingAt(index);
+        int typePosition;
+        if (selectedBinding.isKeyboard()) {
+            typePosition = 0;
+        } else if (selectedBinding.isMouse()) {
+            typePosition = 1;
+        } else if (selectedBinding.isGamepad()) {
+            typePosition = 2;
+        } else {
+            typePosition = 0;
+        }
+        sBindingType.setSelection(typePosition, false);
+
+        sBinding.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                VirtualKeysBinding binding;
+                switch (sBindingType.getSelectedItemPosition()) {
+                    case 0:
+                        binding = VirtualKeysBinding.keyboardBindings()[position];
+                        break;
+                    case 1:
+                        binding = VirtualKeysBinding.mouseBindings()[position];
+                        break;
+                    case 2:
+                        binding = VirtualKeysBinding.gamepadBindings()[position];
+                        break;
+                    default:
+                        binding = VirtualKeysBinding.NONE;
+                        break;
+                }
+                if (binding != element.getBindingAt(index)) {
+                    element.setBindingAt(index, binding);
+                    if (profile != null) profile.save();
+                    inputControlsView.invalidate();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        update.run();
     }
 
     private void loadBindingSpinner(VirtualKeysElement element, LinearLayout container, int index, String title) {
@@ -447,76 +578,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                 spinner.setSelection(i, false);
                 return;
             }
-        }
-    }
-
-    private void loadIcons(LinearLayout parent, byte selectedId) {
-        byte[] iconIds = new byte[0];
-        try {
-            String[] filenames = getAssets().list("inputcontrols/icons/");
-            if (filenames != null) {
-                iconIds = new byte[filenames.length];
-                for (int i = 0; i < filenames.length; i++) {
-                    String name = filenames[i];
-                    int dotIndex = name.indexOf('.');
-                    String numPart = dotIndex > 0 ? name.substring(0, dotIndex) : name;
-                    try {
-                        iconIds[i] = Byte.parseByte(numPart);
-                    } catch (NumberFormatException e) {
-                        iconIds[i] = 0;
-                    }
-                }
-            }
-        } catch (IOException e) {
-        }
-
-        Arrays.sort(iconIds);
-
-        float density = getResources().getDisplayMetrics().density;
-        int size = (int) (40 * density);
-        int margin = (int) (2 * density);
-        int padding = (int) (4 * density);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
-        params.setMargins(margin, 0, margin, 0);
-
-        GradientDrawable iconBackground = new GradientDrawable();
-        iconBackground.setShape(GradientDrawable.RECTANGLE);
-        iconBackground.setCornerRadius(4 * density);
-        iconBackground.setStroke((int) (1 * density), 0xFF888888);
-        iconBackground.setColor(0x33FFFFFF);
-
-        for (byte id : iconIds) {
-            ImageView imageView = new ImageView(this);
-            imageView.setLayoutParams(params);
-            imageView.setPadding(padding, padding, padding, padding);
-            imageView.setBackground(iconBackground);
-            imageView.setTag(id);
-            imageView.setSelected(id == selectedId);
-
-            final ImageView iv = imageView;
-            imageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    for (int i = 0; i < parent.getChildCount(); i++) {
-                        View child = parent.getChildAt(i);
-                        child.setSelected(false);
-                        child.setScaleX(1.0f);
-                        child.setScaleY(1.0f);
-                    }
-                    iv.setSelected(true);
-                    iv.setScaleX(1.2f);
-                    iv.setScaleY(1.2f);
-                }
-            });
-
-            try {
-                java.io.InputStream is = getAssets().open("inputcontrols/icons/" + id + ".png");
-                imageView.setImageBitmap(BitmapFactory.decodeStream(is));
-                is.close();
-            } catch (IOException e) {
-            }
-
-            parent.addView(imageView);
         }
     }
 

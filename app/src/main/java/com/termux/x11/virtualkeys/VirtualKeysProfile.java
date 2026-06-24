@@ -180,7 +180,8 @@ public class VirtualKeysProfile {
     }
 
     public static VirtualKeysProfile fromJSON(Context context, String name, JSONObject json) throws Exception {
-        VirtualKeysProfile profile = new VirtualKeysProfile(context, name);
+        String actualName = json.optString("name", name);
+        VirtualKeysProfile profile = new VirtualKeysProfile(context, actualName);
         JSONArray elementsArray = json.getJSONArray("elements");
         profile.elementsJson = elementsArray;
         for (int i = 0; i < elementsArray.length(); i++) {
