@@ -7,9 +7,9 @@
     <string name="app_name">&TERMUX_X11_APP_NAME;</string>
 
     <string name="not_connected">Not connected</string>
-    <string name="preferences_button_text">   PREFERENCES   </string>
-    <string name="help_button_text">   HELP   </string>
-    <string name="exit_button_text">   EXIT   </string>
+    <string name="preferences_button_text">   PREFERENCES   </string>
+    <string name="help_button_text">   HELP   </string>
+    <string name="exit_button_text">   EXIT   </string>
     <string name="extra_keys_config_desc">Here you can set value of extra-keys variable like in Termux app (read <a href="http://wiki.termux.com/wiki/Touch_Keyboard#Extra_Keys_Row">this</a>) and more \n
 E.g. <b>META</b> for <i>META key</i>, \n
 <b>KEYBOARD</b> for <i>soft keyboard toggling key</i>, \n
@@ -117,4 +117,21 @@ E.g. <b>META</b> for <i>META key</i>, \n
     <string name="lorie_pref_summary_requiresExactOrCustom">Requires "display resolution mode" to be "exact" or "custom"</string>
     <string name="lorie_pref_summary_requiresIntercepting">Requires intercepting system shortcuts with Dex mode or with Accessibility service</string>
     <string name="lorie_pref_summary_requiresTrackpadAndNative">Requires "Touchscreen input mode" to be "Trackpad" and "Display resolution mode" to be not "native"</string>
+
+    <!-- Virtual Keys -->
+    <string name="profile_name">Profile Name</string>
+    <string name="select_profile">Select Profile</string>
+    <string name="no_profile_selected">No profile selected</string>
+    <string name="no_control_element_selected">No control element selected</string>
+    <string name="profile_exported_to">Profile exported to</string>
+    <string name="unable_to_import_profile">Unable to import profile</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="create">Create</string>
+    <string name="lorie_pref_virtualkeys">Virtual Keys</string>
+    <string name="lorie_pref_vk_enabled">Enable Virtual Keys</string>
+    <string name="lorie_pref_vk_show">Show Virtual Keys</string>
+    <string name="lorie_pref_vk_opacity">Virtual Keys opacity, %</string>
+    <string name="lorie_pref_vk_open_editor">Open Virtual Keys Editor</string>
+    <string name="lorie_pref_vk_manage_profiles">Manage Virtual Keys Profiles</string>
 </resources>

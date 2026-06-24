@@ -51,6 +51,13 @@
 	    <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="false"/>
 	    <meta-data android:name="android.allow_multiple_resumed_activities" android:value="true" />
 
+        <activity
+            android:theme="@style/Theme.AppCompat.DayNight"
+            android:name=".virtualkeys.VirtualKeysEditorActivity"
+            android:taskAffinity=".VirtualKeysEditorActivity"
+            android:supportsPictureInPicture="false"
+            android:resizeableActivity="true"
+            android:exported="false" />
         <service android:name=".utils.KeyInterceptor"
             android:exported="true"
             android:label="Termux:X11 KeyInterceptor"

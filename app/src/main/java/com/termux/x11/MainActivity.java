@@ -66,6 +66,11 @@ import com.termux.x11.utils.FullscreenWorkaround;
 import com.termux.x11.utils.KeyInterceptor;
 import com.termux.x11.utils.TermuxX11ExtraKeys;
 import com.termux.x11.utils.X11ToolbarViewPager;
+import com.termux.x11.virtualkeys.VirtualKeysView;
+import com.termux.x11.virtualkeys.VirtualKeysProfile;
+import com.termux.x11.virtualkeys.VirtualKeysManager;
+import com.termux.x11.virtualkeys.VirtualKeysInputSender;
+import com.termux.x11.virtualkeys.VirtualKeysBinding;
 
 import java.util.Map;
 
@@ -92,6 +97,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isInPictureInPictureMode = false;
 
     public static Prefs prefs = null;
+
+    public VirtualKeysView virtualKeysView;
+    public VirtualKeysManager virtualKeysManager;
 
     private static boolean oldFullscreen = false, oldHideCutout = false;
     private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChangedListener = (__, key) -> onPreferencesChanged(key);
@@ -238,6 +246,38 @@ public class MainActivity extends AppCompatActivity {
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PERMISSION_GRANTED
                 && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
             requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS }, 0);
+        }
+
+        virtualKeysManager = new VirtualKeysManager(this);
+        virtualKeysView = new VirtualKeysView(this);
+        virtualKeysView.setVisibility(View.GONE);
+        frm.addView(virtualKeysView);
+
+        // Apply defaults only on fresh install (no existing settings)
+        if (!prefs.get().getBoolean("_prefs_initialized", false)) {
+            SharedPreferences.Editor editor = prefs.get().edit();
+            editor.putBoolean("_prefs_initialized", true);
+
+            if (prefs.get().getAll().isEmpty()) {
+                // Keyboard defaults
+                editor.putBoolean("showAdditionalKbd", false);
+                editor.putBoolean("showIMEWhileExternalConnected", false);
+                editor.putBoolean("hardwareKbdScancodesWorkaround", false);
+
+                // Output defaults
+                editor.putString("displayResolutionMode", "custom");
+                editor.putString("displayResolutionExact", "1920x1080");
+                editor.putString("displayFilteringMode", "nearest");
+                editor.putBoolean("adjustResolution", false);
+                editor.putBoolean("displayStretch", false);
+                editor.putBoolean("Reseed", false);
+                editor.putBoolean("PIP", true);
+                editor.putBoolean("fullscreen", true);
+                editor.putBoolean("hideCutout", true);
+                editor.putBoolean("keepScreenOn", true);
+            }
+
+            editor.commit();
         }
 
         onReceiveConnection(getIntent());
@@ -601,6 +641,56 @@ public class MainActivity extends AppCompatActivity {
         lorieView.requestLayout();
         lorieView.invalidate();
 
+        if (virtualKeysView != null) {
+            boolean vkEnabled = prefs != null && prefs.getBoolean("vk_enabled", false);
+            if (vkEnabled && LorieView.connected()) {
+                if (virtualKeysView.getParent() == null && frm != null)
+                    frm.addView(virtualKeysView);
+                virtualKeysView.setVisibility(View.VISIBLE);
+                if (prefs != null)
+                    virtualKeysView.overlayOpacity = prefs.getInt("vk_opacity", 40) / 100.0f;
+
+                if (virtualKeysView.inputSender == null) {
+                    LorieView lv = getLorieView();
+                    if (lv != null) {
+                        InputStub stub = lv;
+                        virtualKeysView.inputSender = new VirtualKeysInputSender() {
+                            @Override public void onKeyEvent(VirtualKeysBinding binding, boolean isDown) {
+                                int androidKeyCode = binding.toAndroidKeyCode();
+                                if (androidKeyCode != 0) {
+                                    stub.sendKeyEvent(binding.keycode(), androidKeyCode, isDown);
+                                }
+                            }
+                            @Override public void onPointerButton(int button, boolean isDown) {
+                                stub.sendMouseEvent(0, 0, button, isDown, false);
+                            }
+                            @Override public void onPointerMove(int dx, int dy) {
+                                stub.sendMouseEvent(dx, dy, InputStub.BUTTON_UNDEFINED, false, true);
+                            }
+                        };
+                    }
+                }
+
+                if (prefs != null) {
+                    String profileName = prefs.getString("vk_current_profile", "");
+                    if (!profileName.isEmpty()) {
+                        try {
+                            VirtualKeysProfile p = VirtualKeysProfile.load(MainActivity.this, profileName);
+                            if (p != null) {
+                                virtualKeysView.setProfile(p);
+                                virtualKeysView.setEditMode(false);
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } else {
+                if (virtualKeysView.getVisibility() == View.VISIBLE) {
+                    virtualKeysView.releaseAllKeys();
+                }
+                virtualKeysView.setVisibility(View.GONE);
+            }
+        }
+
         for (StatusBarNotification notification: mNotificationManager.getActiveNotifications())
             if (notification.getId() == mNotificationId) {
                 mNotification = buildNotification();
@@ -622,6 +712,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         inputMethodManager.hideSoftInputFromWindow(getWindow().getDecorView().getRootView().getWindowToken(), 0);
+
+        if (virtualKeysView != null) {
+            virtualKeysView.releaseAllKeys();
+        }
 
         for (StatusBarNotification notification: mNotificationManager.getActiveNotifications())
             if (notification.getId() == mNotificationId)

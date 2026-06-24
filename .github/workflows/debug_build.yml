@@ -5,15 +5,22 @@ on:
   push:
     branches:
       - master
+      - develop
+      - 'feature/*'
+      - 'bugfix/*'
     paths-ignore:
       - '**.md'
       - 'img/**'
   pull_request:
     branches:
       - master
+      - develop
     paths-ignore:
       - '**.md'
       - 'img/**'
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
 
 permissions:
   contents: write
@@ -55,6 +62,10 @@ jobs:
       run: ./gradlew assembleDebug
     - name: Build companion package
       run: ./build_termux_package
+    - name: Clean up old artifacts
+      run: |
+        echo "Cleaning up old artifacts..."
+        rm -rf ./app/build/outputs/apk/debug/*.apk ./app/build/outputs/apk/debug/*.deb ./app/build/outputs/apk/debug/*.pkg.tar.xz
     - name: Store app-arm64-v8a-debug
       uses: actions/upload-artifact@v7
       with:
@@ -88,7 +99,7 @@ jobs:
     - name: Store companion package
       uses: actions/upload-artifact@v7
       with:
-        name: termux-companion packages
+        name: termux-companion-packages
         path: |
           ./app/build/outputs/apk/debug/termux-x11-*-all.deb
           ./app/build/outputs/apk/debug/termux-x11-*-any.pkg.tar.xz
@@ -101,7 +112,7 @@ jobs:
 
     - name: Update Nightly Release
       uses: andelf/nightly-release@main
-      if: github.repository == 'termux/termux-x11' && github.ref == 'refs/heads/master'
+      if: github.repository == 'termux/termux-x11' && (github.ref == 'refs/heads/master' || github.event_name == 'schedule')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:

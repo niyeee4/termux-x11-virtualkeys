@@ -394,6 +394,24 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                 return true;
             }
 
+            if ("vk_open_editor".contentEquals(p.getKey())) {
+                Intent intent = new Intent(getActivity(), com.termux.x11.virtualkeys.VirtualKeysEditorActivity.class);
+                String profileName = prefs.getString("vk_current_profile", "");
+                if (!profileName.isEmpty())
+                    intent.putExtra("profile_name", profileName);
+                startActivity(intent);
+                return true;
+            }
+
+            if ("vk_manage_profiles".contentEquals(p.getKey())) {
+                // Open VirtualKeysFragment
+                getActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(android.R.id.content, new com.termux.x11.virtualkeys.VirtualKeysFragment())
+                    .addToBackStack("virtualkeys")
+                    .commit();
+                return true;
+            }
+
             updatePreferencesLayout();
             return super.onPreferenceTreeClick(p);
         }
@@ -869,16 +887,16 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                 return builtInDisplayPreferences.getBoolean(k, d);
             return preferences.getBoolean(k, d);
         }
-        @Override public void putString(String k, @Nullable String v) { prefs.get().edit().putString(k, v).commit(); }
-        @Override public void putStringSet(String k, @Nullable Set<String> v) { prefs.get().edit().putStringSet(k, v).commit(); }
-        @Override public void putInt(String k, int v) { prefs.get().edit().putInt(k, v).commit(); }
-        @Override public void putLong(String k, long v) { prefs.get().edit().putLong(k, v).commit(); }
-        @Override public void putFloat(String k, float v) { prefs.get().edit().putFloat(k, v).commit(); }
-        @Nullable @Override public String getString(String k, @Nullable String d) { return prefs.get().getString(k, d); }
-        @Nullable @Override public Set<String> getStringSet(String k, @Nullable Set<String> ds) { return prefs.get().getStringSet(k, ds); }
-        @Override public int getInt(String k, int d) { return prefs.get().getInt(k, d); }
-        @Override public long getLong(String k, long d) { return prefs.get().getLong(k, d); }
-        @Override public float getFloat(String k, float d) { return prefs.get().getFloat(k, d); }
+        @Override public void putString(String k, @Nullable String v) { get().edit().putString(k, v).commit(); }
+        @Override public void putStringSet(String k, @Nullable Set<String> v) { get().edit().putStringSet(k, v).commit(); }
+        @Override public void putInt(String k, int v) { get().edit().putInt(k, v).commit(); }
+        @Override public void putLong(String k, long v) { get().edit().putLong(k, v).commit(); }
+        @Override public void putFloat(String k, float v) { get().edit().putFloat(k, v).commit(); }
+        @Nullable @Override public String getString(String k, @Nullable String d) { return get().getString(k, d); }
+        @Nullable @Override public Set<String> getStringSet(String k, @Nullable Set<String> ds) { return get().getStringSet(k, ds); }
+        @Override public int getInt(String k, int d) { return get().getInt(k, d); }
+        @Override public long getLong(String k, long d) { return get().getLong(k, d); }
+        @Override public float getFloat(String k, float d) { return get().getFloat(k, d); }
 
         public SharedPreferences get() {
             return preferences;

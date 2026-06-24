@@ -2,8 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     namespace 'com.termux.x11'
-    //noinspection GrDeprecatedAPIUsage
-    compileSdkVersion 34
+    compileSdk 35
     defaultConfig {
         applicationId "com.termux.x11"
         minSdkVersion 26
@@ -30,6 +29,7 @@ android {
         universalApk true
     }
 
+    ndkVersion "28.0.13004108"
     compileOptions.sourceCompatibility JavaVersion.VERSION_1_9
     compileOptions.targetCompatibility JavaVersion.VERSION_1_9
     externalNativeBuild.cmake.path "src/main/cpp/CMakeLists.txt"
@@ -51,7 +51,11 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0'
     implementation 'androidx.preference:preference:1.2.1'
     compileOnly project(':shell-loader:stub')
+
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity:1.9.3'
 }
+
 afterEvaluate {
     tasks.register("generatePrefs") {
         //noinspection UnnecessaryQualifiedReference
