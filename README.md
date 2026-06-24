@@ -1,11 +1,11 @@
 ## Credits
 
 Virtual Keys feature adapted from:
-- Linbox-WinEmu (afeimod)
-- Winlator (brunodev85)
+- [Linbox-WinEmu](https://github.com/afeimod/Linbox-WinEmu) (afeimod)
+- [Winlator](https://github.com/brunodev85/winlator) (brunodev85)
 
 Original project:
-- Termux:X11
+- [Termux:X11](https://github.com/termux/termux-x11)
 
 # Termux:X11
 
