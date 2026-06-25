@@ -271,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
                 editor.putBoolean("adjustResolution", false);
                 editor.putBoolean("displayStretch", false);
                 editor.putBoolean("Reseed", false);
-                editor.putBoolean("PIP", true);
+                editor.putBoolean("PIP", false);
                 editor.putBoolean("fullscreen", true);
                 editor.putBoolean("hideCutout", true);
                 editor.putBoolean("keepScreenOn", true);

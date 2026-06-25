@@ -5,6 +5,7 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
     </style>
+    <style name="AppTheme.Light" parent="Theme.AppCompat.Light" />
     <style name="Preference.Category.Material">
         <item name="android:layout">@layout/preference_category_material</item>
         <item name="allowDividerAbove">true</item>

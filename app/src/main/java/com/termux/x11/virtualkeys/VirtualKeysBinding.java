@@ -3,7 +3,7 @@ package com.termux.x11.virtualkeys;
 import android.view.KeyEvent;
 
 public enum VirtualKeysBinding {
-    NONE(0, false, false, false),
+    NONE(0, true, false, false),
 
     KEY_ESC(1, true, false, false),
     KEY_ESCAPE(1, true, false, false),
@@ -465,11 +465,19 @@ public enum VirtualKeysBinding {
         java.util.ArrayList<VirtualKeysBinding> kb = new java.util.ArrayList<>();
         java.util.ArrayList<VirtualKeysBinding> mb = new java.util.ArrayList<>();
         java.util.ArrayList<VirtualKeysBinding> gb = new java.util.ArrayList<>();
+        java.util.HashSet<String> seenKeyboardLabels = new java.util.HashSet<>();
         for (VirtualKeysBinding b : values()) {
-            if (b.isKeyboard()) kb.add(b);
-            else if (b.isMouse()) mb.add(b);
-            else if (b.isGamepad()) gb.add(b);
+            if (b.isKeyboard()) {
+                if (seenKeyboardLabels.add(b.toString())) {
+                    kb.add(b);
+                }
+            } else if (b.isMouse()) {
+                mb.add(b);
+            } else if (b.isGamepad()) {
+                gb.add(b);
+            }
         }
+        java.util.Collections.sort(kb, (x, y) -> compareKeyboardLabels(x.toString(), y.toString()));
         keyboardCache = kb.toArray(new VirtualKeysBinding[0]);
         mouseCache = mb.toArray(new VirtualKeysBinding[0]);
         gamepadCache = gb.toArray(new VirtualKeysBinding[0]);
@@ -479,6 +487,42 @@ public enum VirtualKeysBinding {
         for (int i = 0; i < mouseCache.length; i++) mouseLabelCache[i] = mouseCache[i].toString();
         gamepadLabelCache = new String[gamepadCache.length];
         for (int i = 0; i < gamepadCache.length; i++) gamepadLabelCache[i] = gamepadCache[i].toString();
+    }
+
+    private static int compareKeyboardLabels(String a, String b) {
+        int ga = keyboardGroup(a);
+        int gb = keyboardGroup(b);
+        if (ga != gb) return Integer.compare(ga, gb);
+        return a.compareTo(b);
+    }
+
+    private static int keyboardGroup(String label) {
+        if (label.equals("NONE")) return 0;
+        if (label.length() == 1) {
+            char c = label.charAt(0);
+            if (c >= 'A' && c <= 'Z') return 1;
+            if (c >= '0' && c <= '9') return 2;
+            return 3;
+        }
+        if (label.startsWith("F") && label.length() <= 3) {
+            try {
+                Integer.parseInt(label.substring(1));
+                return 6;
+            } catch (NumberFormatException e) {}
+        }
+        if (label.startsWith("L ") || label.startsWith("R ")) {
+            if (label.contains("CTRL") || label.contains("SHIFT") || label.contains("ALT")) return 7;
+        }
+        if (label.equals("LWIN") || label.equals("RWIN")) return 7;
+        if (label.equals("TAB") || label.equals("ENTER") || label.equals("ESC") ||
+            label.equals("SPACE") || label.equals("BKSP") || label.equals("DELETE")) return 8;
+        if (label.equals("UP") || label.equals("DOWN") || label.equals("LEFT") || label.equals("RIGHT")) return 9;
+        if (label.equals("HOME") || label.equals("END") || label.equals("PG UP") ||
+            label.equals("PG DN") || label.equals("INSERT") || label.equals("PRINT") ||
+            label.equals("PAUSE")) return 10;
+        if (label.equals("CAPS LOCK") || label.equals("NUM LOCK") || label.equals("SCROLL LOCK")) return 11;
+        if (label.startsWith("NP ")) return 12;
+        return 13;
     }
 
     public static VirtualKeysBinding[] keyboardBindings() { buildCaches(); return keyboardCache; }

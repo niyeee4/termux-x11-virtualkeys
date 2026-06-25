@@ -90,6 +90,9 @@ public class VirtualKeysProfile {
                 if (elementJson.has("orientation")) {
                     element.setOrientation((byte) elementJson.getInt("orientation"));
                 }
+                if (elementJson.has("columns")) {
+                    element.setColumns(elementJson.getInt("columns"));
+                }
 
                 JSONArray bindingsArray = elementJson.getJSONArray("bindings");
                 for (int j = 0; j < bindingsArray.length(); j++) {
@@ -159,6 +162,9 @@ public class VirtualKeysProfile {
             if (el.has("orientation")) {
                 element.setOrientation((byte) el.getInt("orientation"));
             }
+            if (el.has("columns")) {
+                element.setColumns(el.getInt("columns"));
+            }
             JSONArray bindingsArray = el.getJSONArray("bindings");
             for (int j = 0; j < bindingsArray.length(); j++) {
                 element.setBindingAt(j, VirtualKeysBinding.fromString(bindingsArray.getString(j)));
@@ -201,6 +207,9 @@ public class VirtualKeysProfile {
             }
             if (el.has("orientation")) {
                 element.setOrientation((byte) el.getInt("orientation"));
+            }
+            if (el.has("columns")) {
+                element.setColumns(el.getInt("columns"));
             }
             JSONArray bindingsArray = el.getJSONArray("bindings");
             for (int j = 0; j < bindingsArray.length(); j++) {

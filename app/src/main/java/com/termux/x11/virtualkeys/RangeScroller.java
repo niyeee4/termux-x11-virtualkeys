@@ -1,16 +1,23 @@
 package com.termux.x11.virtualkeys;
 
 import android.graphics.Rect;
+import android.view.View;
 
 public class RangeScroller {
     private final VirtualKeysView view;
     private final VirtualKeysElement element;
     private float scrollOffset = 0f;
-    private final int[] rangeIndex = new int[]{0, 26};
     private float lastTouchX = 0f;
     private float lastTouchY = 0f;
     private boolean isDragging = false;
     private int lastActivatedIndex = -1;
+
+    private float velocity = 0f;
+    private long lastMoveTime = 0;
+    private boolean flinging = false;
+
+    private static final float FLING_FRICTION = 0.92f;
+    private static final float FLING_MIN_VELOCITY = 1.5f;
 
     public RangeScroller(VirtualKeysView view, VirtualKeysElement element) {
         this.view = view;
@@ -25,19 +32,21 @@ public class RangeScroller {
         return scrollOffset;
     }
 
-    public int[] getRangeIndex() {
-        return rangeIndex;
-    }
-
-    public void handleTouchDown(VirtualKeysElement element, float x, float y) {
+    public void handleTouchDown(float x, float y) {
+        if (flinging) {
+            flinging = false;
+            view.removeCallbacks(flingRunnable);
+        }
         lastTouchX = x;
         lastTouchY = y;
         isDragging = true;
         lastActivatedIndex = -1;
-        updateRangeIndex(element, x, y);
+        velocity = 0f;
+        lastMoveTime = 0;
+        updateActivatedIndex();
     }
 
-    public void handleTouchMove(VirtualKeysElement element, float x, float y) {
+    public void handleTouchMove(float x, float y) {
         if (!isDragging) return;
 
         float delta = element.getOrientation() == 0 ? x - lastTouchX : y - lastTouchY;
@@ -46,19 +55,86 @@ public class RangeScroller {
         lastTouchX = x;
         lastTouchY = y;
 
-        updateRangeIndex(element, x, y);
+        long now = System.currentTimeMillis();
+        if (lastMoveTime > 0) {
+            float dt = Math.max(1, now - lastMoveTime);
+            velocity = delta / dt;
+        }
+        lastMoveTime = now;
+
+        updateActivatedIndex();
         view.invalidate();
     }
 
     public void handleTouchUp() {
         if (lastActivatedIndex >= 0) {
-            VirtualKeysBinding binding = getBindingForRangeIndex(element.getRange(), lastActivatedIndex);
-            if (binding != VirtualKeysBinding.NONE) {
-                view.handleInputEvent(binding, false);
-            }
-            lastActivatedIndex = -1;
+            releaseActivatedIndex();
         }
         isDragging = false;
+        if (Math.abs(velocity) > FLING_MIN_VELOCITY && !flinging) {
+            startFling();
+        }
+    }
+
+    private final Runnable flingRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isDragging) {
+                flinging = false;
+                return;
+            }
+            velocity *= FLING_FRICTION;
+            if (Math.abs(velocity) < FLING_MIN_VELOCITY) {
+                flinging = false;
+                return;
+            }
+            scrollOffset -= velocity;
+            view.invalidate();
+            view.postOnAnimation(this);
+        }
+    };
+
+    private void startFling() {
+        flinging = true;
+        view.postOnAnimation(flingRunnable);
+    }
+
+    private void updateActivatedIndex() {
+        VirtualKeysElement.Range range = element.getRange() != null ? element.getRange() : VirtualKeysElement.Range.FROM_A_TO_Z;
+        float elementSize = getElementSize();
+        Rect box = element.getBoundingBox();
+
+        float position = element.getOrientation() == 0 ?
+            (lastTouchX - box.left + scrollOffset) / elementSize :
+            (lastTouchY - box.top + scrollOffset) / elementSize;
+
+        int virtualIndex = (int) Math.floor(position);
+        int maxItems = range.max & 0xFF;
+        int wrappedIndex = ((virtualIndex % maxItems) + maxItems) % maxItems;
+
+        if (wrappedIndex != lastActivatedIndex) {
+            if (lastActivatedIndex >= 0) {
+                VirtualKeysBinding prevBinding = getBindingForRangeIndex(range, lastActivatedIndex);
+                if (prevBinding != VirtualKeysBinding.NONE) {
+                    view.handleInputEvent(prevBinding, false);
+                }
+            }
+
+            VirtualKeysBinding binding = getBindingForRangeIndex(range, wrappedIndex);
+            if (binding != VirtualKeysBinding.NONE) {
+                view.handleInputEvent(binding, true);
+            }
+            lastActivatedIndex = wrappedIndex;
+        }
+    }
+
+    private void releaseActivatedIndex() {
+        VirtualKeysElement.Range range = element.getRange() != null ? element.getRange() : VirtualKeysElement.Range.FROM_A_TO_Z;
+        VirtualKeysBinding binding = getBindingForRangeIndex(range, lastActivatedIndex);
+        if (binding != VirtualKeysBinding.NONE) {
+            view.handleInputEvent(binding, false);
+        }
+        lastActivatedIndex = -1;
     }
 
     private VirtualKeysBinding getBindingForRangeIndex(VirtualKeysElement.Range range, int index) {
@@ -140,39 +216,6 @@ public class RangeScroller {
                 }
             default:
                 return VirtualKeysBinding.NONE;
-        }
-    }
-
-    private void updateRangeIndex(VirtualKeysElement element, float x, float y) {
-        VirtualKeysElement.Range range = element.getRange() != null ? element.getRange() : VirtualKeysElement.Range.FROM_A_TO_Z;
-        float elementSize = getElementSize();
-        Rect box = element.getBoundingBox();
-
-        float position = element.getOrientation() == 0 ?
-            (x - box.left + scrollOffset) / elementSize :
-            (y - box.top + scrollOffset) / elementSize;
-
-        int visibleCount = 5;
-        int centerIndex = Math.max(0, Math.min((int) position, range.max - 1));
-        int startIndex = Math.max(0, centerIndex - visibleCount / 2);
-        int endIndex = Math.min(startIndex + visibleCount, range.max);
-
-        rangeIndex[0] = startIndex;
-        rangeIndex[1] = endIndex;
-
-        if (centerIndex != lastActivatedIndex) {
-            if (lastActivatedIndex >= 0) {
-                VirtualKeysBinding prevBinding = getBindingForRangeIndex(range, lastActivatedIndex);
-                if (prevBinding != VirtualKeysBinding.NONE) {
-                    view.handleInputEvent(prevBinding, false);
-                }
-            }
-
-            VirtualKeysBinding binding = getBindingForRangeIndex(range, centerIndex);
-            if (binding != VirtualKeysBinding.NONE) {
-                view.handleInputEvent(binding, true);
-                lastActivatedIndex = centerIndex;
-            }
         }
     }
 }

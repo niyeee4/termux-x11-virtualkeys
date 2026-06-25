@@ -157,6 +157,18 @@ public class VirtualKeysView extends View {
                 if (isDown && (dx != 0 || dy != 0) && inputSender != null) {
                     inputSender.onPointerMove(dx, dy);
                 }
+            } else if (binding == VirtualKeysBinding.MOUSE_SCROLL_UP) {
+                if (isDown && inputSender != null) {
+                    int speed = PreferenceManager.getDefaultSharedPreferences(getContext())
+                        .getInt("mouseScrollSpeed", 5);
+                    inputSender.onScroll(0f, -120f * speed);
+                }
+            } else if (binding == VirtualKeysBinding.MOUSE_SCROLL_DOWN) {
+                if (isDown && inputSender != null) {
+                    int speed = PreferenceManager.getDefaultSharedPreferences(getContext())
+                        .getInt("mouseScrollSpeed", 5);
+                    inputSender.onScroll(0f, 120f * speed);
+                }
             } else {
                 Integer button = binding.getPointerButton();
                 if (button != null && inputSender != null) {

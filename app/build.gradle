@@ -38,8 +38,8 @@ android {
     buildFeatures.buildConfig true
     buildTypes.debug {
         signingConfig signingConfigs.debug
-        minifyEnabled true
-        shrinkResources true
+        minifyEnabled false
+        shrinkResources false
         proguardFiles 'proguard-rules.pro'
     }
 }

@@ -84,6 +84,7 @@ public class VirtualKeysElement {
     private byte iconId = 0;
     private Range range = null;
     private byte orientation = 0;
+    private int columns = 5;
 
     private int currentPointerId = -1;
     private Rect boundingBox = new Rect();
@@ -231,12 +232,25 @@ public class VirtualKeysElement {
         }
     }
 
+    public int getColumns() {
+        return columns;
+    }
+
+    public void setColumns(int columns) {
+        if (this.columns != columns) {
+            this.columns = Math.max(1, columns);
+            boundingBoxNeedsUpdate = true;
+        }
+    }
+
     private void reset() {
         text = "";
         iconId = 0;
         range = null;
         scroller = null;
         toggleActive = false;
+        columns = 5;
+        orientation = 0;
         boundingBoxNeedsUpdate = true;
     }
 
@@ -332,7 +346,7 @@ public class VirtualKeysElement {
                 halfHeight = snappingSize * 6;
                 break;
             case RANGE_BUTTON:
-                halfWidth = (bindings.length * 4 * snappingSize) / 2;
+                halfWidth = (columns * 4 * snappingSize) / 2;
                 halfHeight = snappingSize * 2;
                 if (orientation == 1) {
                     int tmp = halfWidth;
@@ -531,6 +545,11 @@ public class VirtualKeysElement {
         int snappingSize = view.getSnappingSize();
         float radius = snappingSize * 0.75f * scale;
 
+        float elementSize = snappingSize * 4 * scale;
+        Range currentRange = range != null ? range : Range.FROM_A_TO_Z;
+        float scrollOffset = scroller != null ? scroller.getScrollOffset() : 0f;
+        int maxItems = currentRange.max & 0xFF;
+
         if (orientation == 0) {
             float lineTop = box.top + strokeWidth * 0.5f;
             float lineBottom = box.bottom - strokeWidth * 0.5f;
@@ -543,23 +562,25 @@ public class VirtualKeysElement {
             clipPath.addRoundRect(box.left, box.top, box.right, box.bottom, radius, radius, Path.Direction.CW);
             canvas.clipPath(clipPath);
 
-            float elementSize = snappingSize * 4 * scale;
-            Range currentRange = range != null ? range : Range.FROM_A_TO_Z;
-            float scrollOffset = scroller != null ? scroller.getScrollOffset() : 0f;
-            int[] rangeIndex = scroller != null ? scroller.getRangeIndex() : new int[]{0, currentRange.max};
+            float positionAtLeftEdge = scrollOffset / elementSize;
+            int leftVirtualIndex = (int) Math.floor(positionAtLeftEdge);
+            float fractionalOffset = positionAtLeftEdge - leftVirtualIndex;
+            int baseIndex = ((leftVirtualIndex % maxItems) + maxItems) % maxItems;
 
-            float startX = box.left - scrollOffset % elementSize;
+            int itemsToDraw = (int) Math.ceil(box.width() / elementSize) + 2;
+            float startX = box.left - fractionalOffset * elementSize;
 
-            for (int i = rangeIndex[0]; i < rangeIndex[1]; i++) {
-                int index = i % currentRange.max;
+            for (int i = 0; i < itemsToDraw; i++) {
+                int index = (baseIndex + i) % maxItems;
+                float itemX = startX + i * elementSize;
+
                 paint.setStyle(Paint.Style.STROKE);
-
-                if (startX > box.left && startX < box.right) {
-                    canvas.drawLine(startX, lineTop, startX, lineBottom, paint);
+                if (itemX > box.left && itemX < box.right) {
+                    canvas.drawLine(itemX, lineTop, itemX, lineBottom, paint);
                 }
 
                 String text = getRangeTextForIndex(currentRange, index);
-                if (startX < box.right && startX + elementSize > box.left) {
+                if (itemX + elementSize > box.left && itemX < box.right) {
                     paint.setStyle(Paint.Style.FILL);
                     paint.setColor(view.getPrimaryColor());
                     paint.setTextSize(Math.min(
@@ -569,12 +590,11 @@ public class VirtualKeysElement {
                     paint.setTextAlign(Paint.Align.CENTER);
                     canvas.drawText(
                         text,
-                        startX + elementSize * 0.5f,
+                        itemX + elementSize * 0.5f,
                         y - (paint.descent() + paint.ascent()) * 0.5f,
                         paint
                     );
                 }
-                startX += elementSize;
             }
 
             canvas.restore();
@@ -590,22 +610,25 @@ public class VirtualKeysElement {
             clipPath.addRoundRect(box.left, box.top, box.right, box.bottom, radius, radius, Path.Direction.CW);
             canvas.clipPath(clipPath);
 
-            float elementSize = snappingSize * 4 * scale;
-            Range currentRange = range != null ? range : Range.FROM_A_TO_Z;
-            float scrollOffset = scroller != null ? scroller.getScrollOffset() : 0f;
-            int[] rangeIndex = scroller != null ? scroller.getRangeIndex() : new int[]{0, currentRange.max};
+            float positionAtTopEdge = scrollOffset / elementSize;
+            int topVirtualIndex = (int) Math.floor(positionAtTopEdge);
+            float fractionalOffset = positionAtTopEdge - topVirtualIndex;
+            int baseIndex = ((topVirtualIndex % maxItems) + maxItems) % maxItems;
 
-            float startY = box.top - scrollOffset % elementSize;
+            int itemsToDraw = (int) Math.ceil(box.height() / elementSize) + 2;
+            float startY = box.top - fractionalOffset * elementSize;
 
-            for (int i = rangeIndex[0]; i < rangeIndex[1]; i++) {
+            for (int i = 0; i < itemsToDraw; i++) {
+                int index = (baseIndex + i) % maxItems;
+                float itemY = startY + i * elementSize;
+
                 paint.setStyle(Paint.Style.STROKE);
-
-                if (startY > box.top && startY < box.bottom) {
-                    canvas.drawLine(lineLeft, startY, lineRight, startY, paint);
+                if (itemY > box.top && itemY < box.bottom) {
+                    canvas.drawLine(lineLeft, itemY, lineRight, itemY, paint);
                 }
 
-                String text = getRangeTextForIndex(currentRange, i);
-                if (startY < box.bottom && startY + elementSize > box.top) {
+                String text = getRangeTextForIndex(currentRange, index);
+                if (itemY + elementSize > box.top && itemY < box.bottom) {
                     paint.setStyle(Paint.Style.FILL);
                     paint.setColor(view.getPrimaryColor());
                     paint.setTextSize(Math.min(
@@ -616,11 +639,10 @@ public class VirtualKeysElement {
                     canvas.drawText(
                         text,
                         (float) x,
-                        startY + elementSize * 0.5f - (paint.descent() + paint.ascent()) * 0.5f,
+                        itemY + elementSize * 0.5f - (paint.descent() + paint.ascent()) * 0.5f,
                         paint
                     );
                 }
-                startY += elementSize;
             }
 
             canvas.restore();
@@ -696,11 +718,11 @@ public class VirtualKeysElement {
             case FROM_A_TO_Z:
                 return String.valueOf((char) ('A' + index));
             case DIGITS:
-                return String.valueOf((index + 1) % 10);
+                return String.valueOf(index);
             case FUNCTION_KEYS:
                 return "F" + (index + 1);
             case NUMPAD_DIGITS:
-                return "NP" + ((index + 1) % 10);
+                return "NP" + index;
             default:
                 return "";
         }
@@ -732,7 +754,7 @@ public class VirtualKeysElement {
                     if (scroller == null) {
                         scroller = new RangeScroller(view, this);
                     }
-                    scroller.handleTouchDown(this, px, py);
+                    scroller.handleTouchDown(px, py);
                     return true;
                 case TRACKPAD:
                     if (currentPosition == null) {
@@ -883,7 +905,7 @@ public class VirtualKeysElement {
             return true;
         } else if (pointerId == currentPointerId && type == Type.RANGE_BUTTON) {
             if (scroller != null) {
-                scroller.handleTouchMove(this, px, py);
+                scroller.handleTouchMove(px, py);
             }
             return true;
         }
@@ -1008,6 +1030,7 @@ public class VirtualKeysElement {
 
             if (type == Type.RANGE_BUTTON && range != null) {
                 json.put("range", range.name());
+                json.put("columns", columns);
                 if (orientation != 0) {
                     json.put("orientation", (int) orientation);
                 }

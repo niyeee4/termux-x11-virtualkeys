@@ -1,9 +1,11 @@
 package com.termux.x11.virtualkeys;
 
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +28,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class VirtualKeysEditorActivity extends AppCompatActivity implements View.OnClickListener {
     private VirtualKeysView inputControlsView;
     private VirtualKeysProfile profile;
+    private Context lightContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,7 +118,8 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
     }
 
     private void showControlElementSettings(View anchorView, VirtualKeysElement element) {
-        View view = LayoutInflater.from(this).inflate(com.termux.x11.R.layout.virtual_keys_element_settings, null);
+        lightContext = new ContextThemeWrapper(this, com.termux.x11.R.style.AppTheme_Light);
+        View view = LayoutInflater.from(lightContext).inflate(com.termux.x11.R.layout.virtual_keys_element_settings, null);
 
         Runnable[] updateLayoutRef = new Runnable[1];
         Runnable updateLayout = new Runnable() {
@@ -151,6 +155,28 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 element.setOrientation((byte) (checkedId == com.termux.x11.R.id.RBVertical ? 1 : 0));
+                if (profile != null) profile.save();
+                inputControlsView.invalidate();
+            }
+        });
+
+        EditText etColumns = view.findViewById(com.termux.x11.R.id.ETColumns);
+        etColumns.setText(String.valueOf(element.getColumns()));
+        etColumns.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                int value;
+                try {
+                    value = Integer.parseInt(s.toString());
+                } catch (NumberFormatException e) {
+                    return;
+                }
+                value = Math.max(1, Math.min(20, value));
+                element.setColumns(value);
                 if (profile != null) profile.save();
                 inputControlsView.invalidate();
             }
@@ -217,6 +243,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(true);
         popupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE));
+        popupWindow.setElevation(dpToPx(8));
 
         contentView.measure(
             View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
@@ -227,7 +254,9 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
         int[] location = new int[2];
         anchorView.getLocationOnScreen(location);
 
-        int screenHeight = getWindow().getAttributes().height;
+        android.graphics.Point size = new android.graphics.Point();
+        getWindowManager().getDefaultDisplay().getSize(size);
+        int screenHeight = size.y;
         int anchorY = location[1];
 
         int spaceBelow = screenHeight - anchorY - anchorView.getHeight();
@@ -253,7 +282,9 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
 
     private void loadTypeSpinner(VirtualKeysElement element, Spinner spinner, Runnable callback) {
         String[] typeNames = VirtualKeysElement.Type.names();
-        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, typeNames));
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, typeNames);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
         spinner.setSelection(element.getType().ordinal(), false);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -270,7 +301,9 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
 
     private void loadShapeSpinner(VirtualKeysElement element, Spinner spinner) {
         String[] shapeNames = VirtualKeysElement.Shape.names();
-        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, shapeNames));
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, shapeNames);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
         spinner.setSelection(element.getShape().ordinal(), false);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -286,7 +319,9 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
 
     private void loadRangeSpinner(VirtualKeysElement element, Spinner spinner) {
         String[] rangeNames = VirtualKeysElement.Range.names();
-        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, rangeNames));
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, rangeNames);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
         if (element.getRange() != null) {
             spinner.setSelection(element.getRange().ordinal(), false);
         }
@@ -314,14 +349,14 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                 }
                 for (int i = 0; i < slotsToShow; i++) {
                     float density = getResources().getDisplayMetrics().density;
-                    LinearLayout row = new LinearLayout(this);
+                    LinearLayout row = new LinearLayout(lightContext);
                     row.setOrientation(LinearLayout.HORIZONTAL);
                     row.setPadding(0, (int) (4 * density), 0, (int) (4 * density));
                     LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                     container.addView(row, rowParams);
 
-                    LinearLayout spinnerColumn = new LinearLayout(this);
+                    LinearLayout spinnerColumn = new LinearLayout(lightContext);
                     spinnerColumn.setOrientation(LinearLayout.VERTICAL);
                     spinnerColumn.setLayoutParams(new LinearLayout.LayoutParams(
                         0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -331,7 +366,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                     loadBindingSpinnerInline(element, spinnerColumn, i, title);
 
                     if (i > 0) {
-                        android.widget.Button removeBtn = new android.widget.Button(this);
+                        android.widget.Button removeBtn = new android.widget.Button(lightContext);
                         removeBtn.setText("X");
                         removeBtn.setTextSize(10);
                         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
@@ -350,7 +385,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                 }
                 final int nextSlot = slotsToShow;
                 if (nextSlot < 4) {
-                    android.widget.Button addBtn = new android.widget.Button(this);
+                    android.widget.Button addBtn = new android.widget.Button(lightContext);
                     addBtn.setText("+ Add Key");
                     addBtn.setTextSize(12);
                     addBtn.setLayoutParams(new LinearLayout.LayoutParams(
@@ -378,19 +413,21 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
     private void loadBindingSpinnerInline(VirtualKeysElement element, LinearLayout container, int index, String title) {
         float density = getResources().getDisplayMetrics().density;
 
-        TextView tvTitle = new TextView(this);
+        TextView tvTitle = new TextView(lightContext);
         tvTitle.setText(title);
         tvTitle.setTextSize(12);
         container.addView(tvTitle, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        Spinner sBindingType = new Spinner(this);
+        Spinner sBindingType = new Spinner(lightContext);
         String[] typeEntries = {"Keyboard", "Mouse", "Gamepad"};
-        sBindingType.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, typeEntries));
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, typeEntries);
+        typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sBindingType.setAdapter(typeAdapter);
         container.addView(sBindingType, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        Spinner sBinding = new Spinner(this);
+        Spinner sBinding = new Spinner(lightContext);
         container.addView(sBinding, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -410,8 +447,10 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                     bindingEntries = VirtualKeysBinding.keyboardBindingLabels();
                     break;
             }
-            sBinding.setAdapter(new ArrayAdapter<>(VirtualKeysEditorActivity.this,
-                android.R.layout.simple_spinner_dropdown_item, bindingEntries));
+            ArrayAdapter<String> bindingAdapter = new ArrayAdapter<>(lightContext,
+                android.R.layout.simple_spinner_item, bindingEntries);
+            bindingAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            sBinding.setAdapter(bindingAdapter);
             setSpinnerSelectionFromValue(sBinding, element.getBindingAt(index).toString());
         };
 
@@ -471,26 +510,28 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
     private void loadBindingSpinner(VirtualKeysElement element, LinearLayout container, int index, String title) {
         float density = getResources().getDisplayMetrics().density;
 
-        LinearLayout row = new LinearLayout(this);
+        LinearLayout row = new LinearLayout(lightContext);
         row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(0, (int) (8 * density), 0, (int) (8 * density));
         LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         container.addView(row, rowParams);
 
-        TextView tvTitle = new TextView(this);
+        TextView tvTitle = new TextView(lightContext);
         tvTitle.setText(title);
         tvTitle.setTextSize(14);
         row.addView(tvTitle, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        Spinner sBindingType = new Spinner(this);
+        Spinner sBindingType = new Spinner(lightContext);
         String[] typeEntries = {"Keyboard", "Mouse", "Gamepad"};
-        sBindingType.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, typeEntries));
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, typeEntries);
+        typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sBindingType.setAdapter(typeAdapter);
         row.addView(sBindingType, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        Spinner sBinding = new Spinner(this);
+        Spinner sBinding = new Spinner(lightContext);
         row.addView(sBinding, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -512,8 +553,10 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                         bindingEntries = VirtualKeysBinding.keyboardBindingLabels();
                         break;
                 }
-                sBinding.setAdapter(new ArrayAdapter<>(VirtualKeysEditorActivity.this,
-                    android.R.layout.simple_spinner_dropdown_item, bindingEntries));
+                ArrayAdapter<String> bindingAdapter = new ArrayAdapter<>(lightContext,
+                    android.R.layout.simple_spinner_item, bindingEntries);
+                bindingAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                sBinding.setAdapter(bindingAdapter);
                 setSpinnerSelectionFromValue(sBinding, element.getBindingAt(index).toString());
             }
         };
