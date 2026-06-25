@@ -1,3 +1,4 @@
+![](vk.png)
 ## Credits
 
 Virtual Keys feature adapted from:
