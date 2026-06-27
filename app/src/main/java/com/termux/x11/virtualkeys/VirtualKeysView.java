@@ -145,8 +145,7 @@ public class VirtualKeysView extends View {
     }
 
     public void handleInputEvent(VirtualKeysBinding binding, boolean isDown, float value) {
-        if (binding.isGamepad()) {
-        } else if (binding.isMouse()) {
+        if (binding.isMouse()) {
             if (binding.isMouseMove()) {
                 int dx = 0;
                 int dy = 0;

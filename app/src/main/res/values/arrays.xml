@@ -90,10 +90,9 @@
         <item>reverse landscape</item>
     </string-array>
 
-    <integer name="binding_type_entries">3</integer>
+    <integer name="binding_type_entries">2</integer>
     <array name="binding_type_names">
         <item>Keyboard</item>
         <item>Mouse</item>
-        <item>Gamepad</item>
     </array>
 </resources>

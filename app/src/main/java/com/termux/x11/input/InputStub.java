@@ -42,4 +42,5 @@ public interface InputStub {
     void sendTouchEvent(int action, int pointerId, int x, int y);
 
     void sendStylusEvent(float x, float y, int pressure, int tiltX, int tiltY, int orientation, int buttons, boolean eraser, boolean mouseMode);
+
 }

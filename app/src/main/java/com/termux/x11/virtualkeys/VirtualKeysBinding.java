@@ -3,201 +3,172 @@ package com.termux.x11.virtualkeys;
 import android.view.KeyEvent;
 
 public enum VirtualKeysBinding {
-    NONE(0, true, false, false),
+    NONE(0, true, false), // keyboard
 
-    KEY_ESC(1, true, false, false),
-    KEY_ESCAPE(1, true, false, false),
-    KEY_F1(59, true, false, false),
-    KEY_F2(60, true, false, false),
-    KEY_F3(61, true, false, false),
-    KEY_F4(62, true, false, false),
-    KEY_F5(63, true, false, false),
-    KEY_F6(64, true, false, false),
-    KEY_F7(65, true, false, false),
-    KEY_F8(66, true, false, false),
-    KEY_F9(67, true, false, false),
-    KEY_F10(68, true, false, false),
-    KEY_F11(69, true, false, false),
-    KEY_F12(70, true, false, false),
-    KEY_GRAVE(41, true, false, false),
-    KEY_1(2, true, false, false),
-    KEY_2(3, true, false, false),
-    KEY_3(4, true, false, false),
-    KEY_4(5, true, false, false),
-    KEY_5(6, true, false, false),
-    KEY_6(7, true, false, false),
-    KEY_7(8, true, false, false),
-    KEY_8(9, true, false, false),
-    KEY_9(10, true, false, false),
-    KEY_0(11, true, false, false),
-    KEY_MINUS(12, true, false, false),
-    KEY_EQUALS(13, true, false, false),
-    KEY_BKSP(14, true, false, false),
-    KEY_BACKSPACE(14, true, false, false),
-    KEY_TAB(15, true, false, false),
-    KEY_Q(16, true, false, false),
-    KEY_W(17, true, false, false),
-    KEY_E(18, true, false, false),
-    KEY_R(19, true, false, false),
-    KEY_T(20, true, false, false),
-    KEY_Y(21, true, false, false),
-    KEY_U(22, true, false, false),
-    KEY_I(23, true, false, false),
-    KEY_O(24, true, false, false),
-    KEY_P(25, true, false, false),
-    KEY_BRACKET_LEFT(26, true, false, false),
-    KEY_BRACKET_RIGHT(27, true, false, false),
-    KEY_BACKSLASH(43, true, false, false),
-    KEY_CAPITAL(58, true, false, false),
-    KEY_CAPS_LOCK(58, true, false, false),
-    KEY_A(30, true, false, false),
-    KEY_S(31, true, false, false),
-    KEY_D(32, true, false, false),
-    KEY_F(33, true, false, false),
-    KEY_G(34, true, false, false),
-    KEY_H(35, true, false, false),
-    KEY_J(36, true, false, false),
-    KEY_K(37, true, false, false),
-    KEY_L(38, true, false, false),
-    KEY_SEMICOLON(39, true, false, false),
-    KEY_APOSTROPHE(40, true, false, false),
-    KEY_ENTER(28, true, false, false),
-    KEY_SHIFT_L(42, true, false, false),
-    KEY_LSHIFT(42, true, false, false),
-    KEY_SHIFT_R(54, true, false, false),
-    KEY_RSHIFT(54, true, false, false),
-    KEY_Z(44, true, false, false),
-    KEY_X(45, true, false, false),
-    KEY_C(46, true, false, false),
-    KEY_V(47, true, false, false),
-    KEY_B(48, true, false, false),
-    KEY_N(49, true, false, false),
-    KEY_M(50, true, false, false),
-    KEY_COMMA(51, true, false, false),
-    KEY_PERIOD(52, true, false, false),
-    KEY_SLASH(53, true, false, false),
-    KEY_CTRL_L(29, true, false, false),
-    KEY_LCTRL(29, true, false, false),
-    KEY_LCONTROL(29, true, false, false),
-    KEY_CTRL_R(157, true, false, false),
-    KEY_RCTRL(157, true, false, false),
-    KEY_RCONTROL(157, true, false, false),
-    KEY_LWIN(125, true, false, false),
-    KEY_LMENU(56, true, false, false),
-    KEY_LALT(56, true, false, false),
-    KEY_ALT_L(56, true, false, false),
-    KEY_SPACE(57, true, false, false),
-    KEY_RMENU(126, true, false, false),
-    KEY_RALT(126, true, false, false),
-    KEY_ALT_R(126, true, false, false),
-    KEY_RWIN(127, true, false, false),
-    KEY_UP(72, true, false, false),
-    KEY_DOWN(80, true, false, false),
-    KEY_LEFT(105, true, false, false),
-    KEY_RIGHT(106, true, false, false),
-    KEY_INSERT(110, true, false, false),
-    KEY_HOME(102, true, false, false),
-    KEY_END(107, true, false, false),
-    KEY_PGUP(104, true, false, false),
-    KEY_PAGEUP(104, true, false, false),
-    KEY_PGDN(109, true, false, false),
-    KEY_PAGEDOWN(109, true, false, false),
-    KEY_DELETE(111, true, false, false),
-    KEY_DEL(111, true, false, false),
-    KEY_PRTSCN(127, true, false, false),
-    KEY_PRINT(127, true, false, false),
-    KEY_SCROLL_LOCK(70, true, false, false),
-    KEY_PAUSE(197, true, false, false),
-    NUMPAD_0(82, true, false, false),
-    KEY_KP_0(82, true, false, false),
-    NUMPAD_1(79, true, false, false),
-    KEY_KP_1(79, true, false, false),
-    NUMPAD_2(80, true, false, false),
-    KEY_KP_2(80, true, false, false),
-    NUMPAD_3(81, true, false, false),
-    KEY_KP_3(81, true, false, false),
-    NUMPAD_4(75, true, false, false),
-    KEY_KP_4(75, true, false, false),
-    NUMPAD_5(76, true, false, false),
-    KEY_KP_5(76, true, false, false),
-    NUMPAD_6(77, true, false, false),
-    KEY_KP_6(77, true, false, false),
-    NUMPAD_7(71, true, false, false),
-    KEY_KP_7(71, true, false, false),
-    NUMPAD_8(72, true, false, false),
-    KEY_KP_8(72, true, false, false),
-    NUMPAD_9(73, true, false, false),
-    KEY_KP_9(73, true, false, false),
-    NUMPAD_DECIMAL(83, true, false, false),
-    KEY_KP_DECIMAL(83, true, false, false),
-    NUMPAD_DIVIDE(84, true, false, false),
-    KEY_KP_DIVIDE(84, true, false, false),
-    NUMPAD_MULTIPLY(85, true, false, false),
-    KEY_KP_MULTIPLY(85, true, false, false),
-    NUMPAD_MINUS(86, true, false, false),
-    KEY_KP_SUBTRACT(86, true, false, false),
-    NUMPAD_PLUS(87, true, false, false),
-    KEY_KP_ADD(87, true, false, false),
-    NUMPAD_ENTER(156, true, false, false),
-    KEY_KP_ENTER(156, true, false, false),
-    KEY_NUM_LOCK(69, true, false, false),
-    KEY_NUMLOCK(69, true, false, false),
-    KEY_SCROLL(151, true, false, false),
+    KEY_ESC(1, true, false),
+    KEY_ESCAPE(1, true, false),
+    KEY_F1(59, true, false),
+    KEY_F2(60, true, false),
+    KEY_F3(61, true, false),
+    KEY_F4(62, true, false),
+    KEY_F5(63, true, false),
+    KEY_F6(64, true, false),
+    KEY_F7(65, true, false),
+    KEY_F8(66, true, false),
+    KEY_F9(67, true, false),
+    KEY_F10(68, true, false),
+    KEY_F11(69, true, false),
+    KEY_F12(70, true, false),
+    KEY_GRAVE(41, true, false),
+    KEY_1(2, true, false),
+    KEY_2(3, true, false),
+    KEY_3(4, true, false),
+    KEY_4(5, true, false),
+    KEY_5(6, true, false),
+    KEY_6(7, true, false),
+    KEY_7(8, true, false),
+    KEY_8(9, true, false),
+    KEY_9(10, true, false),
+    KEY_0(11, true, false),
+    KEY_MINUS(12, true, false),
+    KEY_EQUALS(13, true, false),
+    KEY_BKSP(14, true, false),
+    KEY_BACKSPACE(14, true, false),
+    KEY_TAB(15, true, false),
+    KEY_Q(16, true, false),
+    KEY_W(17, true, false),
+    KEY_E(18, true, false),
+    KEY_R(19, true, false),
+    KEY_T(20, true, false),
+    KEY_Y(21, true, false),
+    KEY_U(22, true, false),
+    KEY_I(23, true, false),
+    KEY_O(24, true, false),
+    KEY_P(25, true, false),
+    KEY_BRACKET_LEFT(26, true, false),
+    KEY_BRACKET_RIGHT(27, true, false),
+    KEY_BACKSLASH(43, true, false),
+    KEY_CAPITAL(58, true, false),
+    KEY_CAPS_LOCK(58, true, false),
+    KEY_A(30, true, false),
+    KEY_S(31, true, false),
+    KEY_D(32, true, false),
+    KEY_F(33, true, false),
+    KEY_G(34, true, false),
+    KEY_H(35, true, false),
+    KEY_J(36, true, false),
+    KEY_K(37, true, false),
+    KEY_L(38, true, false),
+    KEY_SEMICOLON(39, true, false),
+    KEY_APOSTROPHE(40, true, false),
+    KEY_ENTER(28, true, false),
+    KEY_SHIFT_L(42, true, false),
+    KEY_LSHIFT(42, true, false),
+    KEY_SHIFT_R(54, true, false),
+    KEY_RSHIFT(54, true, false),
+    KEY_Z(44, true, false),
+    KEY_X(45, true, false),
+    KEY_C(46, true, false),
+    KEY_V(47, true, false),
+    KEY_B(48, true, false),
+    KEY_N(49, true, false),
+    KEY_M(50, true, false),
+    KEY_COMMA(51, true, false),
+    KEY_PERIOD(52, true, false),
+    KEY_SLASH(53, true, false),
+    KEY_CTRL_L(29, true, false),
+    KEY_LCTRL(29, true, false),
+    KEY_LCONTROL(29, true, false),
+    KEY_CTRL_R(157, true, false),
+    KEY_RCTRL(157, true, false),
+    KEY_RCONTROL(157, true, false),
+    KEY_LWIN(125, true, false),
+    KEY_LMENU(56, true, false),
+    KEY_LALT(56, true, false),
+    KEY_ALT_L(56, true, false),
+    KEY_SPACE(57, true, false),
+    KEY_RMENU(126, true, false),
+    KEY_RALT(126, true, false),
+    KEY_ALT_R(126, true, false),
+    KEY_RWIN(127, true, false),
+    KEY_UP(72, true, false),
+    KEY_DOWN(80, true, false),
+    KEY_LEFT(105, true, false),
+    KEY_RIGHT(106, true, false),
+    KEY_INSERT(110, true, false),
+    KEY_HOME(102, true, false),
+    KEY_END(107, true, false),
+    KEY_PGUP(104, true, false),
+    KEY_PAGEUP(104, true, false),
+    KEY_PGDN(109, true, false),
+    KEY_PAGEDOWN(109, true, false),
+    KEY_DELETE(111, true, false),
+    KEY_DEL(111, true, false),
+    KEY_PRTSCN(127, true, false),
+    KEY_PRINT(127, true, false),
+    KEY_SCROLL_LOCK(70, true, false),
+    KEY_PAUSE(197, true, false),
+    NUMPAD_0(82, true, false),
+    KEY_KP_0(82, true, false),
+    NUMPAD_1(79, true, false),
+    KEY_KP_1(79, true, false),
+    NUMPAD_2(80, true, false),
+    KEY_KP_2(80, true, false),
+    NUMPAD_3(81, true, false),
+    KEY_KP_3(81, true, false),
+    NUMPAD_4(75, true, false),
+    KEY_KP_4(75, true, false),
+    NUMPAD_5(76, true, false),
+    KEY_KP_5(76, true, false),
+    NUMPAD_6(77, true, false),
+    KEY_KP_6(77, true, false),
+    NUMPAD_7(71, true, false),
+    KEY_KP_7(71, true, false),
+    NUMPAD_8(72, true, false),
+    KEY_KP_8(72, true, false),
+    NUMPAD_9(73, true, false),
+    KEY_KP_9(73, true, false),
+    NUMPAD_DECIMAL(83, true, false),
+    KEY_KP_DECIMAL(83, true, false),
+    NUMPAD_DIVIDE(84, true, false),
+    KEY_KP_DIVIDE(84, true, false),
+    NUMPAD_MULTIPLY(85, true, false),
+    KEY_KP_MULTIPLY(85, true, false),
+    NUMPAD_MINUS(86, true, false),
+    KEY_KP_SUBTRACT(86, true, false),
+    NUMPAD_PLUS(87, true, false),
+    KEY_KP_ADD(87, true, false),
+    NUMPAD_ENTER(156, true, false),
+    KEY_KP_ENTER(156, true, false),
+    KEY_NUM_LOCK(69, true, false),
+    KEY_NUMLOCK(69, true, false),
+    KEY_SCROLL(151, true, false),
 
-    MOUSE_LEFT_BUTTON(0, false, true, false),
-    MOUSE_RIGHT_BUTTON(0, false, true, false),
-    MOUSE_MIDDLE_BUTTON(0, false, true, false),
-    MOUSE_MOVE_UP(0, false, true, false),
-    MOUSE_MOVE_DOWN(0, false, true, false),
-    MOUSE_MOVE_LEFT(0, false, true, false),
-    MOUSE_MOVE_RIGHT(0, false, true, false),
-    MOUSE_SCROLL_UP(0, false, true, false),
-    MOUSE_SCROLL_DOWN(0, false, true, false),
-    MOUSE_LEFT_RIGHT(0, false, true, false),
-    MOUSE_TOUCHMODE_SWITCH(0, false, true, false),
-
-    GAMEPAD_BUTTON_A(0, false, false, true),
-    GAMEPAD_BUTTON_B(0, false, false, true),
-    GAMEPAD_BUTTON_X(0, false, false, true),
-    GAMEPAD_BUTTON_Y(0, false, false, true),
-    GAMEPAD_BUTTON_L1(0, false, false, true),
-    GAMEPAD_BUTTON_R1(0, false, false, true),
-    GAMEPAD_BUTTON_L2(0, false, false, true),
-    GAMEPAD_BUTTON_R2(0, false, false, true),
-    GAMEPAD_BUTTON_THUMBL(0, false, false, true),
-    GAMEPAD_BUTTON_THUMBR(0, false, false, true),
-    GAMEPAD_BUTTON_START(0, false, false, true),
-    GAMEPAD_BUTTON_SELECT(0, false, false, true),
-    GAMEPAD_BUTTON_HOME(0, false, false, true),
-    GAMEPAD_DPAD_UP(0, false, false, true),
-    GAMEPAD_DPAD_DOWN(0, false, false, true),
-    GAMEPAD_DPAD_LEFT(0, false, false, true),
-    GAMEPAD_DPAD_RIGHT(0, false, false, true),
-    GAMEPAD_LEFT_THUMB_UP(0, false, false, true),
-    GAMEPAD_LEFT_THUMB_DOWN(0, false, false, true),
-    GAMEPAD_LEFT_THUMB_LEFT(0, false, false, true),
-    GAMEPAD_LEFT_THUMB_RIGHT(0, false, false, true),
-    GAMEPAD_RIGHT_THUMB_UP(0, false, false, true),
-    GAMEPAD_RIGHT_THUMB_DOWN(0, false, false, true),
-    GAMEPAD_RIGHT_THUMB_LEFT(0, false, false, true),
-    GAMEPAD_RIGHT_THUMB_RIGHT(0, false, false, true);
+    MOUSE_LEFT_BUTTON(0, false, true),
+    MOUSE_RIGHT_BUTTON(0, false, true),
+    MOUSE_MIDDLE_BUTTON(0, false, true),
+    MOUSE_MOVE_UP(0, false, true),
+    MOUSE_MOVE_DOWN(0, false, true),
+    MOUSE_MOVE_LEFT(0, false, true),
+    MOUSE_MOVE_RIGHT(0, false, true),
+    MOUSE_SCROLL_UP(0, false, true),
+    MOUSE_SCROLL_DOWN(0, false, true),
+    MOUSE_LEFT_RIGHT(0, false, true),
+    MOUSE_TOUCHMODE_SWITCH(0, false, true);
 
     private final int keycode;
     private final boolean keyboard;
     private final boolean mouse;
-    private final boolean gamepad;
 
-    VirtualKeysBinding(int keycode, boolean keyboard, boolean mouse, boolean gamepad) {
+    VirtualKeysBinding(int keycode, boolean keyboard, boolean mouse) {
         this.keycode = keycode;
         this.keyboard = keyboard;
         this.mouse = mouse;
-        this.gamepad = gamepad;
     }
 
     public int keycode() { return keycode; }
     public boolean isKeyboard() { return keyboard; }
     public boolean isMouse() { return mouse; }
-    public boolean isGamepad() { return gamepad; }
 
     public boolean isMouseMove() {
         return this == MOUSE_MOVE_UP || this == MOUSE_MOVE_DOWN ||
@@ -391,24 +362,7 @@ public enum VirtualKeysBinding {
             case MOUSE_MOVE_RIGHT: return "M RIGHT";
             case MOUSE_SCROLL_UP: return "M SC UP";
             case MOUSE_SCROLL_DOWN: return "M SC DOWN";
-            case GAMEPAD_BUTTON_A: return "G A";
-            case GAMEPAD_BUTTON_B: return "G B";
-            case GAMEPAD_BUTTON_X: return "G X";
-            case GAMEPAD_BUTTON_Y: return "G Y";
-            case GAMEPAD_BUTTON_L1: return "G L1";
-            case GAMEPAD_BUTTON_R1: return "G R1";
-            case GAMEPAD_BUTTON_L2: return "G L2";
-            case GAMEPAD_BUTTON_R2: return "G R2";
-            case GAMEPAD_BUTTON_THUMBL: return "G TL";
-            case GAMEPAD_BUTTON_THUMBR: return "G TR";
-            case GAMEPAD_BUTTON_START: return "G START";
-            case GAMEPAD_BUTTON_SELECT: return "G SELECT";
-            case GAMEPAD_BUTTON_HOME: return "G HOME";
-            case GAMEPAD_DPAD_UP: return "G UP";
-            case GAMEPAD_DPAD_DOWN: return "G DOWN";
-            case GAMEPAD_DPAD_LEFT: return "G LEFT";
-            case GAMEPAD_DPAD_RIGHT: return "G RIGHT";
-            default: return name().replace("KEY_", "").replace("NUMPAD_", "").replace("GAMEPAD_", "");
+            default: return name().replace("KEY_", "").replace("NUMPAD_", "");
         }
     }
 
@@ -455,16 +409,13 @@ public enum VirtualKeysBinding {
 
     private static VirtualKeysBinding[] keyboardCache = null;
     private static VirtualKeysBinding[] mouseCache = null;
-    private static VirtualKeysBinding[] gamepadCache = null;
     private static String[] keyboardLabelCache = null;
     private static String[] mouseLabelCache = null;
-    private static String[] gamepadLabelCache = null;
 
     private static void buildCaches() {
         if (keyboardCache != null) return;
         java.util.ArrayList<VirtualKeysBinding> kb = new java.util.ArrayList<>();
         java.util.ArrayList<VirtualKeysBinding> mb = new java.util.ArrayList<>();
-        java.util.ArrayList<VirtualKeysBinding> gb = new java.util.ArrayList<>();
         java.util.HashSet<String> seenKeyboardLabels = new java.util.HashSet<>();
         for (VirtualKeysBinding b : values()) {
             if (b.isKeyboard()) {
@@ -473,20 +424,15 @@ public enum VirtualKeysBinding {
                 }
             } else if (b.isMouse()) {
                 mb.add(b);
-            } else if (b.isGamepad()) {
-                gb.add(b);
             }
         }
         java.util.Collections.sort(kb, (x, y) -> compareKeyboardLabels(x.toString(), y.toString()));
         keyboardCache = kb.toArray(new VirtualKeysBinding[0]);
         mouseCache = mb.toArray(new VirtualKeysBinding[0]);
-        gamepadCache = gb.toArray(new VirtualKeysBinding[0]);
         keyboardLabelCache = new String[keyboardCache.length];
         for (int i = 0; i < keyboardCache.length; i++) keyboardLabelCache[i] = keyboardCache[i].toString();
         mouseLabelCache = new String[mouseCache.length];
         for (int i = 0; i < mouseCache.length; i++) mouseLabelCache[i] = mouseCache[i].toString();
-        gamepadLabelCache = new String[gamepadCache.length];
-        for (int i = 0; i < gamepadCache.length; i++) gamepadLabelCache[i] = gamepadCache[i].toString();
     }
 
     private static int compareKeyboardLabels(String a, String b) {
@@ -527,8 +473,6 @@ public enum VirtualKeysBinding {
 
     public static VirtualKeysBinding[] keyboardBindings() { buildCaches(); return keyboardCache; }
     public static VirtualKeysBinding[] mouseBindings() { buildCaches(); return mouseCache; }
-    public static VirtualKeysBinding[] gamepadBindings() { buildCaches(); return gamepadCache; }
     public static String[] keyboardBindingLabels() { buildCaches(); return keyboardLabelCache; }
     public static String[] mouseBindingLabels() { buildCaches(); return mouseLabelCache; }
-    public static String[] gamepadBindingLabels() { buildCaches(); return gamepadLabelCache; }
 }

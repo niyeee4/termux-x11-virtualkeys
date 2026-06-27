@@ -9,11 +9,11 @@ import java.util.Arrays;
 
 public class VirtualKeysElement {
     public static final float STICK_DEAD_ZONE = 0.15f;
+    public static final float STICK_DEAD_ZONE_OFF = 0.22f;
     public static final float DPAD_DEAD_ZONE = 0.3f;
-    public static final float STICK_SENSITIVITY = 3.0f;
+    public static final float DPAD_DEAD_ZONE_OFF = 0.42f;
     public static final float TRACKPAD_MIN_SPEED = 0.8f;
     public static final float TRACKPAD_MAX_SPEED = 20.0f;
-    public static final byte TRACKPAD_ACCELERATION_THRESHOLD = 4;
     public static final short BUTTON_MIN_TIME_TO_KEEP_PRESSED = 300;
 
     public enum Type {
@@ -819,25 +819,35 @@ public class VirtualKeysElement {
                     currentPosition.x = box.left + deltaX * radius + radius;
                     currentPosition.y = box.top + deltaY * radius + radius;
 
-                    boolean[] newStates = new boolean[]{
-                        deltaY <= -STICK_DEAD_ZONE,
-                        deltaX >= STICK_DEAD_ZONE,
-                        deltaY >= STICK_DEAD_ZONE,
-                        deltaX <= -STICK_DEAD_ZONE
-                    };
+                    boolean up = (deltaY <= -STICK_DEAD_ZONE)
+                        || (states[0] && deltaY <= -STICK_DEAD_ZONE_OFF);
+                    boolean down = (deltaY >= STICK_DEAD_ZONE)
+                        || (states[2] && deltaY >= STICK_DEAD_ZONE_OFF);
+                    boolean right = (deltaX >= STICK_DEAD_ZONE)
+                        || (states[1] && deltaX >= STICK_DEAD_ZONE_OFF);
+                    boolean left = (deltaX <= -STICK_DEAD_ZONE)
+                        || (states[3] && deltaX <= -STICK_DEAD_ZONE_OFF);
+
+                    if (up && down) {
+                        if (deltaY < 0f) down = false;
+                        else up = false;
+                    }
+                    if (left && right) {
+                        if (deltaX < 0f) right = false;
+                        else left = false;
+                    }
+                    if (up && left && Math.abs(deltaY) > Math.abs(deltaX)) left = false;
+                    if (up && right && Math.abs(deltaY) > Math.abs(deltaX)) right = false;
+                    if (down && left && Math.abs(deltaY) > Math.abs(deltaX)) left = false;
+                    if (down && right && Math.abs(deltaY) > Math.abs(deltaX)) right = false;
+
+                    boolean[] newStates = new boolean[]{up, right, down, left};
 
                     for (int i = 0; i <= 3; i++) {
                         float value = (i == 1 || i == 3) ? deltaX : deltaY;
                         VirtualKeysBinding binding = getBindingAt(i);
 
-                        if (binding.isGamepad()) {
-                            float adjustedValue = clamp(
-                                Math.max(0f, Math.abs(value) - 0.01f) * Math.signum(value) * STICK_SENSITIVITY,
-                                -1f, 1f
-                            );
-                            view.handleInputEvent(binding, true, adjustedValue);
-                            states[i] = true;
-                        } else {
+                        {
                             boolean state = binding.isMouseMove() ? (newStates[i] || newStates[(i + 2) % 4]) : newStates[i];
                             view.handleInputEvent(binding, state, value);
                             states[i] = state;
@@ -860,12 +870,7 @@ public class VirtualKeysElement {
                         float value = (i == 1 || i == 3) ? deltaX : deltaY;
                         VirtualKeysBinding binding = getBindingAt(i);
 
-                        if (binding.isGamepad()) {
-                            if (Math.abs(value) > TRACKPAD_ACCELERATION_THRESHOLD) {
-                                view.handleInputEvent(binding, true, value * STICK_SENSITIVITY);
-                            }
-                            states[i] = true;
-                        } else {
+                        {
                             if (Math.abs(value) > 4) {
                                 if (binding == VirtualKeysBinding.MOUSE_MOVE_LEFT || binding == VirtualKeysBinding.MOUSE_MOVE_RIGHT) {
                                     cursorDx = Math.round(value);
@@ -885,12 +890,29 @@ public class VirtualKeysElement {
                     break;
                 }
                 case D_PAD: {
-                    boolean[] newStates = new boolean[]{
-                        deltaY <= -DPAD_DEAD_ZONE,
-                        deltaX >= DPAD_DEAD_ZONE,
-                        deltaY >= DPAD_DEAD_ZONE,
-                        deltaX <= -DPAD_DEAD_ZONE
-                    };
+                    boolean up = (deltaY <= -DPAD_DEAD_ZONE)
+                        || (states[0] && deltaY <= -DPAD_DEAD_ZONE_OFF);
+                    boolean down = (deltaY >= DPAD_DEAD_ZONE)
+                        || (states[2] && deltaY >= DPAD_DEAD_ZONE_OFF);
+                    boolean right = (deltaX >= DPAD_DEAD_ZONE)
+                        || (states[1] && deltaX >= DPAD_DEAD_ZONE_OFF);
+                    boolean left = (deltaX <= -DPAD_DEAD_ZONE)
+                        || (states[3] && deltaX <= -DPAD_DEAD_ZONE_OFF);
+
+                    if (up && down) {
+                        if (deltaY < 0f) down = false;
+                        else up = false;
+                    }
+                    if (left && right) {
+                        if (deltaX < 0f) right = false;
+                        else left = false;
+                    }
+                    if (up && left && Math.abs(deltaY) > Math.abs(deltaX)) left = false;
+                    if (up && right && Math.abs(deltaY) > Math.abs(deltaX)) right = false;
+                    if (down && left && Math.abs(deltaY) > Math.abs(deltaX)) left = false;
+                    if (down && right && Math.abs(deltaY) > Math.abs(deltaX)) right = false;
+
+                    boolean[] newStates = new boolean[]{up, right, down, left};
 
                     for (int i = 0; i <= 3; i++) {
                         float value = (i == 1 || i == 3) ? deltaX : deltaY;
@@ -994,8 +1016,7 @@ public class VirtualKeysElement {
     }
 
     private boolean isKeepButtonPressedAfterMinTime() {
-        VirtualKeysBinding binding = getBindingAt(0);
-        return binding == VirtualKeysBinding.GAMEPAD_BUTTON_THUMBL || binding == VirtualKeysBinding.GAMEPAD_BUTTON_THUMBR;
+        return false;
     }
 
     private float clamp(float value, float min, float max) {

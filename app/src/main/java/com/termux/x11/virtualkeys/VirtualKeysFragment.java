@@ -1,9 +1,16 @@
 package com.termux.x11.virtualkeys;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +28,13 @@ import androidx.preference.PreferenceManager;
 
 import com.termux.x11.R;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+
+import org.json.JSONObject;
 
 public class VirtualKeysFragment extends Fragment {
     private VirtualKeysManager manager;
@@ -148,6 +161,12 @@ public class VirtualKeysFragment extends Fragment {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Uri x11ProfilesUri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Download/x11profiles");
+                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, x11ProfilesUri);
+            }
             importLauncher.launch(intent);
         });
 
@@ -156,11 +175,7 @@ public class VirtualKeysFragment extends Fragment {
                 Toast.makeText(getContext(), "No profile selected", Toast.LENGTH_SHORT).show();
                 return;
             }
-            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("*/*");
-            intent.putExtra(Intent.EXTRA_TITLE, currentProfile.getName() + ".icp");
-            exportLauncher.launch(intent);
+            exportProfile(currentProfile);
         });
 
         view.findViewById(R.id.vk_bt_open_editor).setOnClickListener(v -> {
@@ -174,6 +189,110 @@ public class VirtualKeysFragment extends Fragment {
         });
 
         return view;
+    }
+
+    private void exportProfile(VirtualKeysProfile profile) {
+        byte[] bytes;
+        String name;
+        try {
+            JSONObject json = profile.toJSONObject();
+            if (json == null) throw new Exception("null JSON");
+            bytes = json.toString(2).getBytes(StandardCharsets.UTF_8);
+            name = profile.getName();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Export failed", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Try direct /sdcard/Download/x11profiles/ first
+        try {
+            File profilesDir = new File(Environment.getExternalStorageDirectory(), "Download/x11profiles");
+            profilesDir.mkdirs();
+            String filename = resolveFilename(profilesDir, name, ".icp");
+            File outFile = new File(profilesDir, filename);
+            FileOutputStream fos = new FileOutputStream(outFile);
+            fos.write(bytes);
+            fos.close();
+            Toast.makeText(getContext(), "Exported to /sdcard/Download/x11profiles/" + filename,
+                Toast.LENGTH_SHORT).show();
+            return;
+        } catch (Exception ignored) {}
+
+        // Fall back to MediaStore with valid RELATIVE_PATH "Download/x11profiles"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (exportViaMediaStore(bytes, name))
+                return;
+        }
+
+        // Last resort: SAF
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, name + ".icp");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Uri x11ProfilesUri = DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents",
+                "primary:Download/x11profiles");
+            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, x11ProfilesUri);
+        }
+        exportLauncher.launch(intent);
+    }
+
+    private String resolveFilename(File dir, String baseName, String extension) {
+        String filename = baseName + extension;
+        File f = new File(dir, filename);
+        int counter = 1;
+        while (f.exists()) {
+            filename = baseName + " (" + counter + ")" + extension;
+            f = new File(dir, filename);
+            counter++;
+        }
+        return filename;
+    }
+
+    private boolean exportViaMediaStore(byte[] bytes, String name) {
+        String ext = ".icp";
+        for (int counter = 0; counter < 1000; counter++) {
+            try {
+                String displayName = counter == 0
+                    ? name + ext
+                    : name + " (" + counter + ")" + ext;
+
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Downloads.DISPLAY_NAME, displayName);
+                values.put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    values.put(MediaStore.Downloads.RELATIVE_PATH, "Download/x11profiles");
+                }
+                Uri uri = requireContext().getContentResolver().insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                if (uri == null)
+                    continue;
+
+                // Check if MediaStore auto-renamed (e.g. name.icp → name.icp (1))
+                try (Cursor c = requireContext().getContentResolver().query(
+                        uri, new String[]{MediaStore.Downloads.DISPLAY_NAME},
+                        null, null, null)) {
+                    if (c != null && c.moveToFirst()) {
+                        String actualName = c.getString(0);
+                        if (!actualName.equals(displayName)) {
+                            requireContext().getContentResolver().delete(uri, null, null);
+                            continue;
+                        }
+                    }
+                }
+
+                try (OutputStream os = requireContext().getContentResolver().openOutputStream(uri)) {
+                    if (os != null)
+                        os.write(bytes);
+                }
+                Toast.makeText(getContext(), "Exported to Download/x11profiles/" + displayName,
+                    Toast.LENGTH_SHORT).show();
+                return true;
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
     }
 
     private void loadProfileSpinner() {

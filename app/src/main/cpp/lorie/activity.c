@@ -329,6 +329,7 @@ static void requestStylusEnabled(__unused JNIEnv *env, __unused jclass clazz, jb
     }
 }
 
+
 static jboolean sendKeyEvent(__unused JNIEnv* env, __unused jobject cls, jint scan_code, jint key_code, jboolean key_down) {
     if (conn_fd != -1) {
         int code = (scan_code) ?: android_to_linux_keycode[key_code];
@@ -396,6 +397,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, __unused void *reserved) {
             {"sendStylusEvent", "(FFIIIIIZZ)V", (void *)&sendStylusEvent},
             {"requestStylusEnabled", "(Z)V", (void *)&requestStylusEnabled},
             {"sendKeyEvent", "(IIZI)Z", (void *)&sendKeyEvent},
+
             {"sendTextEvent", "([B)V", (void *)&sendTextEvent},
             {"requestConnection", "()Z", (void *)&requestConnection},
     };

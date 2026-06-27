@@ -126,14 +126,20 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             @Override
             public void run() {
                 VirtualKeysElement.Type type = element.getType();
+                boolean isButton = type == VirtualKeysElement.Type.BUTTON;
+                boolean isRange = type == VirtualKeysElement.Type.RANGE_BUTTON;
                 view.findViewById(com.termux.x11.R.id.LLShape).setVisibility(
-                    type == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
+                    isButton ? View.VISIBLE : View.GONE);
+                view.findViewById(com.termux.x11.R.id.SShape).setVisibility(
+                    isButton ? View.VISIBLE : View.GONE);
                 view.findViewById(com.termux.x11.R.id.CBToggleSwitch).setVisibility(
-                    type == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
+                    isButton ? View.VISIBLE : View.GONE);
                 view.findViewById(com.termux.x11.R.id.LLCustomText).setVisibility(
-                    type == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
+                    isButton ? View.VISIBLE : View.GONE);
                 view.findViewById(com.termux.x11.R.id.LLRangeOptions).setVisibility(
-                    type == VirtualKeysElement.Type.RANGE_BUTTON ? View.VISIBLE : View.GONE);
+                    isRange ? View.VISIBLE : View.GONE);
+                view.findViewById(com.termux.x11.R.id.SRange).setVisibility(
+                    isRange ? View.VISIBLE : View.GONE);
                 loadBindingSpinners(element, view.findViewById(com.termux.x11.R.id.LLBindings), updateLayoutRef[0]);
             }
         };
@@ -142,11 +148,9 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
         loadTypeSpinner(element, view.findViewById(com.termux.x11.R.id.SType), updateLayout);
 
         Spinner shapeSpinner = view.findViewById(com.termux.x11.R.id.SShape);
-        shapeSpinner.setVisibility(element.getType() == VirtualKeysElement.Type.BUTTON ? View.VISIBLE : View.GONE);
         loadShapeSpinner(element, shapeSpinner);
 
         Spinner rangeSpinner = view.findViewById(com.termux.x11.R.id.SRange);
-        rangeSpinner.setVisibility(element.getType() == VirtualKeysElement.Type.RANGE_BUTTON ? View.VISIBLE : View.GONE);
         loadRangeSpinner(element, rangeSpinner);
 
         RadioGroup rgOrientation = view.findViewById(com.termux.x11.R.id.RGOrientation);
@@ -420,7 +424,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         Spinner sBindingType = new Spinner(lightContext);
-        String[] typeEntries = {"Keyboard", "Mouse", "Gamepad"};
+        String[] typeEntries = {"Keyboard", "Mouse"};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, typeEntries);
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sBindingType.setAdapter(typeAdapter);
@@ -439,9 +443,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                     break;
                 case 1:
                     bindingEntries = VirtualKeysBinding.mouseBindingLabels();
-                    break;
-                case 2:
-                    bindingEntries = VirtualKeysBinding.gamepadBindingLabels();
                     break;
                 default:
                     bindingEntries = VirtualKeysBinding.keyboardBindingLabels();
@@ -469,8 +470,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             typePosition = 0;
         } else if (selectedBinding.isMouse()) {
             typePosition = 1;
-        } else if (selectedBinding.isGamepad()) {
-            typePosition = 2;
         } else {
             typePosition = 0;
         }
@@ -486,9 +485,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                         break;
                     case 1:
                         binding = VirtualKeysBinding.mouseBindings()[position];
-                        break;
-                    case 2:
-                        binding = VirtualKeysBinding.gamepadBindings()[position];
                         break;
                     default:
                         binding = VirtualKeysBinding.NONE;
@@ -524,7 +520,7 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         Spinner sBindingType = new Spinner(lightContext);
-        String[] typeEntries = {"Keyboard", "Mouse", "Gamepad"};
+        String[] typeEntries = {"Keyboard", "Mouse"};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(lightContext, android.R.layout.simple_spinner_item, typeEntries);
         typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sBindingType.setAdapter(typeAdapter);
@@ -545,9 +541,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                         break;
                     case 1:
                         bindingEntries = VirtualKeysBinding.mouseBindingLabels();
-                        break;
-                    case 2:
-                        bindingEntries = VirtualKeysBinding.gamepadBindingLabels();
                         break;
                     default:
                         bindingEntries = VirtualKeysBinding.keyboardBindingLabels();
@@ -576,8 +569,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
             typePosition = 0;
         } else if (selectedBinding.isMouse()) {
             typePosition = 1;
-        } else if (selectedBinding.isGamepad()) {
-            typePosition = 2;
         } else {
             typePosition = 0;
         }
@@ -593,9 +584,6 @@ public class VirtualKeysEditorActivity extends AppCompatActivity implements View
                         break;
                     case 1:
                         binding = VirtualKeysBinding.mouseBindings()[position];
-                        break;
-                    case 2:
-                        binding = VirtualKeysBinding.gamepadBindings()[position];
                         break;
                     default:
                         binding = VirtualKeysBinding.NONE;
